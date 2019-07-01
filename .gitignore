@@ -1,0 +1,9 @@
+
+target/
+
+.idea/
+.bloop/
+.metals/
+
+.dotty-ide-disabled
+.DS_Store
