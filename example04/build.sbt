@@ -27,9 +27,5 @@ lazy val app = (project in file("app"))
 lazy val lib = (project in file("lib"))
   .settings(
     name := "WeatherLib",
-    libraryDependencies ++= Seq(
-      okHttp,
-      playJson,
-      scalaTest % Test,
-    )
+    libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test)
   )
