@@ -214,9 +214,9 @@ Recommended tutorial in the sbt reference guide:
 1. [Creating an application from the template](#create_application)
 1. [Community Plugins](#plugins)
 1. [Aliases](#aliases)
-1. [TODO](#todo)
-1. [TODO](#todo)
-1. [TODO](#todo)
+1. [Scala REPL](#scala_repl)
+1. [Multi Project Builds](#multi_project_builds)
+1. [Cross Builds](#cross_builds)
 1. [TODO](#todo)
 1. [TODO](#todo)
 1. [TODO](#todo)
@@ -236,7 +236,7 @@ name: sbt_without_buildfile
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example01
+  &nbsp; &nbsp; &nbsp; .../example01
 ]
 
 ---
@@ -354,7 +354,7 @@ The '*save session*' command writes manually set settings to a minimal *build.sb
 ```sh
 sbt:example01> session save
 [info] Reapplying settings...
-[info] Set current project to example01 (in build file:/Users/hermann/dev/projects/github/pragmatic-sbt/example01/)
+[info] Set current project to example01 (in build file:.../example01/)
 ```
 --
 ```sh
@@ -391,7 +391,7 @@ name: sbt_new
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example02
+  &nbsp; &nbsp; &nbsp; .../example02
 ]
 
 ---
@@ -500,7 +500,7 @@ name: create_application
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example03
+  &nbsp; &nbsp; &nbsp; .../example03
 ]
 
 ---
@@ -632,7 +632,7 @@ name: plugins
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example03
+  &nbsp; &nbsp; &nbsp; .../example03
 ]
 
 ---
@@ -816,7 +816,7 @@ name: aliases
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example03
+  &nbsp; &nbsp; &nbsp; .../example03
 ]
 
 ---
@@ -883,9 +883,9 @@ sbt:Example03> du
 ---
 
 class: middle, center
-name: multi_project_builds
+name: scala_repl
 
-# 6. Multi Project Builds
+# 6. Scala REPL
 <br/>
 <br/>
 <br/>
@@ -894,12 +894,237 @@ name: multi_project_builds
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; ./example04
+  &nbsp; &nbsp; &nbsp; .../example03
 ]
 
 ---
 
+The **console** command starts a Scala REPL from the sbt prompt.
 
+The **initialCommands** setting in *build.sbt* initializes the REPL session -
+typically used for the import you need in every session of this project.
+
+--
+
+```scala
+ThisBuild / initialCommands :=
+  """
+    |import scala.concurrent._
+    |import scala.concurrent.duration._
+    |import scala.concurrent.ExecutionContext.Implicits.global
+    |import weather.WeatherLib._
+    |""".stripMargin
+```
+
+--
+
+```sh
+sbt:Example03> console
+[info] Starting scala interpreter...
+Welcome to Scala 2.12.8 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_212).
+Type in expressions for evaluation. Or try :help.
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import weather.WeatherLib._
+
+scala> weatherOf("Berlin")
+res0: scala.concurrent.Future[String] = Future(<not completed>)
+
+scala> Await.result(res0, 10.seconds)
+res1: String = showers
+```
+
+---
+
+class: middle, center
+name: multi_project_builds
+
+# 7. Multi Project Builds
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example04
+]
+
+---
+
+<br/>
+<br/>
+## Mulit Project Build
+<br/>
+<br/>
+In *example03* we kept all source code in one sbt project, the "root" project.
+The *src* directory was located directly under the project root directory.
+
+<br/>
+<br/>
+<br/>
+Now we split the code into two subprojects - "WeatherLib" and "WeatherApp" -
+with their own project directories "lib" and "app". The third project "root"
+does not have and does not need a "src" folder of its own. It is the over-arching
+project which controls the other two.
+
+---
+
+### Directory tree
+
+```sh
+HermannMBP:example04 hermann$ tree
+.
+├── app
+│   └── src
+│       ├── main
+│       │   └── scala
+│       │       └── app
+│       │           └── WeatherApp.scala
+├── lib
+│   └── src
+│       ├── main
+│       │   └── scala
+│       │       └── libWeather
+│       │           └── Weather.scala
+│       └── test
+│           └── scala
+│               └── libWeather
+│                   └── WeatherSpec.scala
+├── build.sbt
+└── project
+    ├── Dependencies.scala
+    └── build.properties
+```
+
+---
+
+### build.sbt
+
+```scala
+import Dependencies._
+
+ThisBuild / scalaVersion     := "2.12.8"
+ThisBuild / version          := "0.1.0"
+ThisBuild / organization     := "com.example"
+ThisBuild / organizationName := "example"
+
+lazy val root = (project in file("."))
+  .aggregate(app, lib)
+  .settings(
+    name := "Example04",
+  )
+
+lazy val app = (project in file("app"))
+  .dependsOn(lib)
+  .settings(
+    name := "WeatherApp",
+    initialCommands :=
+      """
+        |import scala.concurrent._
+        |import scala.concurrent.duration._
+        |import scala.concurrent.ExecutionContext.Implicits.global
+        |import libWeather.Weather._
+        |""".stripMargin,
+  )
+
+lazy val lib = (project in file("lib"))
+  .settings(
+    name := "WeatherLib",
+    libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test)
+  )
+```
+
+---
+
+### .aggregate(...)
+
+*root.aggregate(app, lib)* :
+- Every command issued in "root" is propagated to "app" and "lib".
+- e.g.: *compile* in "root" triggers *app/compile* and "lib/compile"
+- *app/compile* and "lib/compile" could be executed in parallel if they do not depend on each other.
+
+--
+
+### .dependsOn(...)
+
+*app.dependsOn(lib)* :
+- "lib" is part of the classpath of "app".
+- "lib must be successfully compiled before "app" is compiled (prevents parallel compilation).
+
+--
+
+### project specific sbt commands:
+
+- **projects** &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; lists the projects in the current build.
+
+- **project [name]** &nbsp; &nbsp; triggers a switch of the current project.
+
+---
+
+```sh
+sbt:Example04> projects
+[info] In file:.../example04/
+[info] 	   app
+[info] 	   lib
+[info] 	 * root
+```
+--
+```sh
+sbt:Example04> project lib
+[info] Set current project to WeatherLib (in build file:.../example04/)
+```
+--
+```sh
+sbt:WeatherLib> projects
+[info] In file:.../example04/
+[info] 	   app
+[info] 	 * lib
+[info] 	   root
+```
+--
+```sh
+sbt:WeatherLib> compile
+[info] Compiling 1 Scala source to .../example04/lib/target/scala-2.12/classes ...
+[info] Done compiling.
+[success] Total time: 4 s, completed 02.07.2019 23:58:48
+```
+--
+```sh
+sbt:WeatherLib> project root
+[info] Set current project to Example04 (in build file:.../example04/)
+```
+--
+```sh
+sbt:Example04> compile
+[info] Compiling 1 Scala source to .../example04/app/target/scala-2.12/classes ...
+[info] Done compiling.
+[success] Total time: 2 s, completed 02.07.2019 23:59:23
+```
+
+---
+
+class: middle, center
+name: cross_builds
+
+# 8. Cross Builds
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example05
+]
+
+---
+
+Cross-building supports building the same (sub) projects for different Scala versions.
 
 ---
 
@@ -914,18 +1139,9 @@ name: TODO
 <br/>
 &nbsp;
 
----
-
-class: middle, center
-name: TODO
-
-# ???. TODO
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-&nbsp;
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example04
+]
 
 ---
 
@@ -940,18 +1156,9 @@ name: TODO
 <br/>
 &nbsp;
 
----
-
-class: middle, center
-name: TODO
-
-# ???. TODO
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-&nbsp;
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example04
+]
 
 ---
 
@@ -965,6 +1172,27 @@ name: TODO
 <br/>
 <br/>
 &nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example04
+]
+
+---
+
+class: middle, center
+name: TODO
+
+# ???. TODO
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example04
+]
 
 ---
 
