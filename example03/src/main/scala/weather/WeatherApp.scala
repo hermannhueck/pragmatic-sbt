@@ -1,11 +1,11 @@
-package example
+package weather
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 object WeatherApp extends App {
 
-  import Weather._
+  import WeatherLib._
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 

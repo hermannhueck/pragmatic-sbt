@@ -1,4 +1,4 @@
-package example
+package weather
 
 import gigahorse.support.okhttp.Gigahorse
 import gigahorse.{FullResponse, HttpClient, Request}
@@ -6,7 +6,7 @@ import play.api.libs.json.{JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object Weather {
+object WeatherLib {
 
   def weatherOf(locationName: String, longFormat: Boolean = false)(implicit ec: ExecutionContext): Future[String] = {
 
