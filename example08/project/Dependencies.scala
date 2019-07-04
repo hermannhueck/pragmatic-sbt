@@ -1,9 +1,9 @@
 import sbt._
 
 object Versions {
-  val playVersion = "2.7.4"
-  val okHttpVersion = "0.5.0"
-  val scalaTestVersion = "3.0.8"
+  val playVersion = "2.7.+"
+  val okHttpVersion = "0.5.+"
+  val scalaTestVersion = "3.0.+"
 }
 
 object Dependencies {

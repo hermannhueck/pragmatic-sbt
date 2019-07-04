@@ -19,7 +19,7 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .enablePlugins(JavaAppPackaging)
   .settings(
-    name := "Example07",
+    name := "Example08",
     crossScalaVersions := Nil,
     publish / skip := true,
   )

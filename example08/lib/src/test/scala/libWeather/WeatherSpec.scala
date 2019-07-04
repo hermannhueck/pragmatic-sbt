@@ -12,7 +12,7 @@ class WeatherSpec extends FlatSpec with Matchers {
     val weather = Await.result(Weather.weatherOf("Berlin", longFormat = true), 10.seconds)
     val fullJson: JsValue = Json.parse(weather)
     //println(s"\n${Json.prettyPrint(fullJson)}\n")
-    val seqJsValues: Seq[JsValue] = fullJson \\ "weather_state_name"
+    val seqJsValues = fullJson \\ "weather_state_name"
     //println(s"\n$seqJsValues\n")
     seqJsValues.length shouldBe > (0)
   }
