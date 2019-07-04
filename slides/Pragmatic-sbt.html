@@ -212,12 +212,13 @@ Recommended tutorial in the sbt reference guide:
 1. [sbt without build file](#sbt_without_buildfile)
 1. [sbt new](#sbt_new)
 1. [Creating an application from the template](#create_application)
-1. [Community Plugins](#plugins)
+1. [Community Plugins](#community_plugins)
 1. [Aliases](#aliases)
 1. [Scala REPL](#scala_repl)
 1. [Multi-project Builds](#multi_project_builds)
 1. [Cross Builds](#cross_builds)
 1. [Source code for different Scala versions](#source_code_for_different_scala_versions)
+1. [Library Dependencies](#library_dependencies)
 1. [App Packaging](#app_packaging)
 1. [TODO](#todo)
 1. [TODO](#todo)
@@ -638,7 +639,7 @@ object WeatherApp extends App {
 
 
 class: middle, center
-name: plugins
+name: community_plugins
 
 # 4. Community Plugins
 <br/>
@@ -1447,9 +1448,9 @@ object WeatherApp extends WeatherBase with App {
 ---
 
 class: middle, center
-name: app_packaging
+name: library_dependencies
 
-# 10. App Packaging
+# 10. Library Dependencies
 <br/>
 <br/>
 <br/>
@@ -1459,6 +1460,99 @@ name: app_packaging
 
 .footnote[
   &nbsp; &nbsp; &nbsp; .../example07
+]
+
+---
+
+class: middle
+
+## Unmanaged dependencies
+<br>
+
+Create a directory named ***lib*** under your subproject's root and put the jars you need into it.
+sbt will add these jars to your subprojects classpath.
+
+This way of adding library dependencies is very uncommon but may be useful in some situations.
+
+---
+
+## Managed dependencies
+
+This is the usual way to define dependencies. We used it already in the first example.
+
+You have to specify or to extend the setting ***libraryDependencies*** which takes a *Seq[ModuleId]*.
+Each *ModuleId* consists of a groupId, artefactId and revision joined with the %-operator
+and optionally followed by a configuration such as "test" or Test (the type-safe way).
+
+When using %% between groupId and artefactId sbt automatically detects the right binary
+Scala version of the library from the current setting of ***scalaVersion***.
+
+--
+
+```sbt
+// gigahorse-okhttp for binary Scala version 2.12.x
+libraryDependencies += "com.eed3si9n" % "gigahorse-okhttp_2.12" % "0.5.0"
+```
+
+--
+
+```sbt
+// gigahorse-okhttp using the current scalaVersion
+libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.0"
+```
+
+--
+
+<br/>
+See also: https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html
+
+---
+
+## Flexible Ivy revisions
+<br/>
+
+Ending the revision number with a + selects the latest available subrevision of a library.
+
+```sbt
+// gigahorse-okhttp using the current scalaVersion
+libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.+"
+```
+
+--
+
+<br/>
+You may also specifiy "latest.release", "latest.milestone" or "latest.integration" instead of a revision number.
+
+```sbt
+// depend on the latest avilable release of the gigahorse-okhttp module
+libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "latest.release"
+```
+
+```sbt
+// depend on the latest avilable integration (release or milestone) of the gigahorse-okhttp module
+libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "latest.integration"
+```
+
+--
+
+<br/>
+See also: https://ant.apache.org/ivy/history/2.3.0/ivyfile/dependency.html#revision
+
+---
+
+class: middle, center
+name: app_packaging
+
+# 11. App Packaging
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; .../example08
 ]
 
 ---
