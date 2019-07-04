@@ -198,7 +198,7 @@ https://github.com/hermannhueck/pragmatic-sbt
 This presentation gives a pragmatic introduction to SBT - the Scala Build Tool -
 in 7 examples. Each example is a build in it's own root directory: ./example??
 Beginning with very simple sbt examples the later examples are becoming more
-structured and more complex showing multi project builds and cross version builds.
+structured and more complex showing multi-project builds and cross version builds.
 
 Recommended tutorial in the sbt reference guide:
 
@@ -215,8 +215,13 @@ Recommended tutorial in the sbt reference guide:
 1. [Community Plugins](#plugins)
 1. [Aliases](#aliases)
 1. [Scala REPL](#scala_repl)
-1. [Multi Project Builds](#multi_project_builds)
+1. [Multi-project Builds](#multi_project_builds)
 1. [Cross Builds](#cross_builds)
+1. [Source code for different Scala versions](#source_code_for_different_scala_versions)
+1. [App Packaging](#app_packaging)
+1. [TODO](#todo)
+1. [TODO](#todo)
+1. [TODO](#todo)
 1. [TODO](#todo)
 1. [TODO](#todo)
 1. [TODO](#todo)
@@ -244,7 +249,8 @@ name: sbt_without_buildfile
 ## No build file
 <br/>
 
-You have a Scala/Java source structure in your root directory:
+sbt uses the same kind of directory structure as Maven and Gradle.<br/>
+We have a Scala/Java source structure in your root directory:
 
 ```sh
 example01 $ tree
@@ -265,7 +271,7 @@ example01 $ tree
 <br/>
 sbt provides a sensible default for every setting.
 
-Hence you can use sbt without *build.sbt* ...
+Hence you can use sbt with an empty *build.sbt* or even without *build.sbt* ...
 
 ---
 
@@ -375,7 +381,7 @@ sbt.version=1.2.8
 --
 
 <br/>
-###This is not the usual way to set up an sbt project.
+###This is a possible but not the usual way to set up an sbt project.
 
 ---
 
@@ -486,6 +492,17 @@ lazy val root = (project in file("."))
   )
 ```
 
+---
+
+<br/>
+## ThisBuild
+<br/>
+
+Settings in *ThisBuild* are the default settings for subprojects. This saves us from specifying
+the settings repeatedly in different subprojects.
+
+<br/>
+A subproject can redefine any setting specified in *ThisBuild*.
 ---
 
 class: middle, center
@@ -640,8 +657,6 @@ name: plugins
 <br/>
 <br/>
 <br/>
-<br/>
-
 Project specific plugins are installed in ...
 ### project/plugins.sbt.
 
@@ -650,10 +665,14 @@ Project specific plugins are installed in ...
 <br/>
 <br/>
 <br/>
-<br/>
-
 User specific plugins (valid in all projects of this user) are installed in ...
 ### ~/.sbt/1.0/plugins/plugins.sbt.
+
+<br/>
+<br/>
+<br/>
+More details:<br/>
+https://www.scala-sbt.org/1.x/docs/Community-Plugins.html
 
 ---
 
@@ -941,7 +960,7 @@ res1: String = showers
 class: middle, center
 name: multi_project_builds
 
-# 7. Multi Project Builds
+# 7. Multi-project Builds
 <br/>
 <br/>
 <br/>
@@ -955,21 +974,28 @@ name: multi_project_builds
 
 ---
 
+## Multi-project Build
+
 <br/>
-<br/>
-## Mulit Project Build
-<br/>
-<br/>
-In *example03* we kept all source code in one sbt project, the "root" project.
+In *example03* we kept all source code in one sbt project, the (implicitly defined) "root" project.
 The *src* directory was located directly under the project root directory.
 
 <br/>
-<br/>
-<br/>
-Now we split the code into two subprojects - "WeatherLib" and "WeatherApp" -
-with their own project directories "lib" and "app". The third project "root"
+Now we split the code into subprojects - "WeatherLib" and "WeatherApp" -
+with their own project directories "lib" and "app". The third subproject "root"
 does not have and does not need a "src" folder of its own. It is the over-arching
 project which controls the other two.
+
+<br/>
+Subprojects are (if not specified otherwise) completely independent of each other.
+I.e: Tasks can be executed in parallel.
+
+<br/>
+The subprojects inherit settings from *ThisBuild*.
+
+<br/>
+More details:<br/>
+https://www.scala-sbt.org/1.x/docs/Multi-Project.html
 
 ---
 
@@ -1023,11 +1049,8 @@ lazy val app = (project in file("app"))
   .settings(
     name := "WeatherApp",
     initialCommands :=
-      """
-        |import scala.concurrent._
-        |import scala.concurrent.duration._
-        |import scala.concurrent.ExecutionContext.Implicits.global
-        |import libWeather.Weather._
+      """  // imports for the console
+        |import ...
         |""".stripMargin,
   )
 
@@ -1053,7 +1076,7 @@ lazy val lib = (project in file("lib"))
 
 *app.dependsOn(lib)* :
 - "lib" is part of the classpath of "app".
-- "lib must be successfully compiled before "app" is compiled (prevents parallel compilation).
+- "lib must be updated and successfully compiled before "app" can be compiled (prevents parallel compilation).
 
 --
 
@@ -1124,14 +1147,226 @@ name: cross_builds
 
 ---
 
-Cross-building supports building the same (sub) projects for different Scala versions.
+<br/>
+## Cross-built libraries
+
+<br/>
+We already used cross-built libraries when specifying the *libraryDependencies*
+with **%%** between group id and artefact id.
+
+--
+
+<br/>
+```scala
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
+```
+
+This automatically appends the current *scalaVersion* to the artefact id.<br/>
+E.g.: &nbsp; *play-json* becomes *play-json_2.13*.
+
+---
+
+```scala
+import Dependencies._
+
+val scala212 = "2.12.8"
+val scala213 = "2.13.0"
+val supportedScalaVersions = List(scala212, scala213)
+
+ThisBuild / scalaVersion     := scala213
+ThisBuild / version          := "0.1.0"
+ThisBuild / organization     := "com.example"
+ThisBuild / organizationName := "example"
+
+lazy val root = (project in file("."))
+  .aggregate(app, lib)
+  .settings(
+    name := "Example05",
+    crossScalaVersions := Nil, // set to Nil on the aggregating project
+    publish / skip := true,
+  )
+
+lazy val app = (project in file("app"))
+  .dependsOn(lib)
+  .settings(
+    name := "WeatherApp",
+    crossScalaVersions := supportedScalaVersions,
+    initialCommands := """ ... // imports |""".stripMargin,
+  )
+
+lazy val lib = (project in file("lib"))
+  .settings(
+    name := "WeatherLib",
+    crossScalaVersions := supportedScalaVersions,
+    libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test),
+  )
+```
+
+---
+
+## crossScalaVersions
+<br/>
+
+--
+
+- *crossScalaVersions* is the setting to achive cross-building our source code to different binary Scala versions.
+
+- It's value is a Seq of Strings, each containg a valid Scala version like "2.12.8" or "2.13.0".
+
+--
+
+- Skip cross-building in the overarching "root" project which has no source code.
+  (Set *crossScalaVersions* to Nil and *publish/skip* to *true*.)
+
+--
+
+- The Scala version can be selected at the sbt prompt with the ++ command, e.g. *++2.12.8*
+
+- If the ++ command is followed by a ! you can also switch to a Scala version
+  not listed in *build.sbt*, e.g. *++2.11.12!*
+
+--
+
+- To build against all versions listed in crossScalaVersions,
+  prefix the action to run with +, e.g. *+compile* or *+test*.
+
+---
+
+```sh
+sbt:Example05> scalaVersion
+[info] app / scalaVersion
+[info] 	2.13.0
+[info] lib / scalaVersion
+[info] 	2.13.0
+[info] scalaVersion
+[info] 	2.13.0
+```
+
+--
+
+```sh
+sbt:Example05> compile
+[info] Compiling 1 Scala source to .../example05/lib/target/scala-2.13/classes ...
+[info] Done compiling.
+[info] Compiling 1 Scala source to .../example05/app/target/scala-2.13/classes ...
+[info] Done compiling.
+[success] Total time: 5 s, completed 04.07.2019 12:39:09
+```
+
+--
+
+```sh
+sbt:Example05> ++2.12.8 -v
+[info] Setting Scala version to 2.12.8 on 2 projects.
+[info] Switching Scala version on:
+[info]     lib (2.12.8, 2.13.0)
+[info]     app (2.12.8, 2.13.0)
+[info] Excluding projects:
+[info]   * root ()
+[info] Reapplying settings...
+[info] Set current project to Example05 (in build file:.../example05/)
+```
+
+---
+
+```sh
+sbt:Example05> compile
+[info] Compiling 1 Scala source to .../example05/lib/target/scala-2.12/classes ...
+[info] Done compiling.
+[info] Compiling 1 Scala source to .../example05/app/target/scala-2.12/classes ...
+[info] Done compiling.
+```
+
+--
+
+```sh
+sbt:Example05> clean
+[success] Total time: 1 s, completed 04.07.2019 12:48:27
+```
+
+--
+
+```sh
+sbt:Example05> +compile
+[info] Setting Scala version to 2.13.0 on 2 projects.
+[info] Excluded 1 projects, run ++ 2.13.0 -v for more details.
+[info] Reapplying settings...
+[info] Set current project to Example05 (in build file:.../example05/)
+[info] Compiling 1 Scala source to .../example05/lib/target/scala-2.13/classes ...
+[info] Done compiling.
+[info] Compiling 1 Scala source to .../example05/app/target/scala-2.13/classes ...
+[info] Done compiling.
+[success] Total time: 4 s, completed 04.07.2019 12:48:37
+[info] Setting Scala version to 2.12.8 on 2 projects.
+[info] Excluded 1 projects, run ++ 2.12.8 -v for more details.
+[info] Reapplying settings...
+[info] Set current project to Example05 (in build file:.../example05/)
+[info] Compiling 1 Scala source to .../example05/lib/target/scala-2.12/classes ...
+[info] Done compiling.
+[info] Compiling 1 Scala source to .../example05/app/target/scala-2.12/classes ...
+[info] Done compiling.
+[success] Total time: 5 s, completed 04.07.2019 12:48:43
+[info] Reapplying settings...
+[info] Set current project to Example05 (in build file:.../example05/)
+```
+
+---
+
+```sh
+sbt:Example05> project lib
+[info] Set current project to WeatherLib (in build file:.../example05/)
+```
+
+--
+
+```sh
+sbt:WeatherLib> ++2.11.12! compile
+[info] Forcing Scala version to 2.11.12 on all projects.
+[info] Reapplying settings...
+[info] Set current project to WeatherLib (in build file:.../example05/)
+[info] Compiling 1 Scala source to .../example05/lib/target/scala-2.11/classes ...
+[info] Done compiling.
+[success] Total time: 2 s, completed 04.07.2019 13:15:44
+```
+
+--
+
+The class files are compiled to version specific subdirectories of the *target* directories.
+
+```sh
+example05 $ tree lib/target/scala-*
+lib/target/scala-2.11
+└── classes
+    └── libWeather
+        └── *.class
+lib/target/scala-2.12
+└── classes
+    └── libWeather
+        └── *.class
+lib/target/scala-2.13
+└── classes
+    └── libWeather
+        └── *.class
+```
+
+---
+
+<br/>
+<br/>
+<br/>
+<br/>
+### More info on cross-building:
+
+<br/>
+<br/>
+https://www.scala-sbt.org/1.x/docs/Cross-Build.html
 
 ---
 
 class: middle, center
-name: TODO
+name: source_code_for_different_scala_versions
 
-# ???. TODO
+# 9. Source code for different Scala versions
 <br/>
 <br/>
 <br/>
@@ -1140,15 +1375,81 @@ name: TODO
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example04
+  &nbsp; &nbsp; &nbsp; .../example06
 ]
 
 ---
 
-class: middle, center
-name: TODO
+## Version specific code locations
+<br/>
 
-# ???. TODO
+If you have source files for different Scala versions, place them into different
+versions specific source directories, e.g.:
+
+- *src/main/scala* &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for code common to all Scala versions
+- *src/main/scala-2.12* &nbsp; &nbsp; &nbsp; for code specific to Scala 2.12.x
+- *src/main/scala-2.13* &nbsp; &nbsp; &nbsp; for code specific to Scala 2.13.x
+
+--
+
+```sh
+example06 $ tree app/src
+app/src
+└── main
+    ├── scala
+    │   └── app
+    │       └── WeatherBase.scala
+    ├── scala-2.12
+    │   └── app
+    │       └── WeatherApp.scala
+    └── scala-2.13
+        └── app
+            └── WeatherApp.scala
+```
+
+---
+
+*src/main/scala/app/WeatherBase.scala*
+```scala
+class WeatherBase {
+  import libWeather.Weather._
+  implicit val ec: ExecutionContext = ExecutionContext.global
+
+  def showWeatherOf(location: String): String = {
+    val scalaVersion = util.Properties.versionString
+    val weather = Await.result(weatherOf(location), 10.seconds)
+    s"\nScala $scalaVersion:\nThe weather in $location is:   $weather\n"
+  }
+}
+```
+
+--
+
+<br/>
+*src/main/scala-2.12/app/WeatherApp.scala*
+```scala
+object WeatherApp extends WeatherBase with App {
+  println(showWeatherOf("Berlin"))
+}
+```
+
+--
+
+<br/>
+*src/main/scala-2.13/app/WeatherApp.scala*
+```scala
+object WeatherApp extends WeatherBase with App {
+  import scala.util.chaining._
+  showWeatherOf("Berlin") tap println
+}
+```
+
+---
+
+class: middle, center
+name: app_packaging
+
+# 10. App Packaging
 <br/>
 <br/>
 <br/>
@@ -1157,7 +1458,7 @@ name: TODO
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example04
+  &nbsp; &nbsp; &nbsp; .../example07
 ]
 
 ---
