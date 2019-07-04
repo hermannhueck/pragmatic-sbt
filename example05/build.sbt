@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .settings(
     name := "Example05",
-    crossScalaVersions := Nil,
+    crossScalaVersions := Nil, // set to Nil on the aggregating project
     publish / skip := true,
   )
 
