@@ -35,9 +35,5 @@ lazy val lib = (project in file("lib"))
   .settings(
     name := "WeatherLib",
     crossScalaVersions := supportedScalaVersions,
-    libraryDependencies ++= Seq(
-      okHttp,
-      playJson,
-      scalaTest % Test,
-    ),
+    libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test),
   )

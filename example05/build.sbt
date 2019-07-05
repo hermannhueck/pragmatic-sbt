@@ -1,8 +1,8 @@
 import Dependencies._
 
-val scala212 = "2.12.8"
 val scala213 = "2.13.0"
-val supportedScalaVersions = List(scala212, scala213)
+val scala212 = "2.12.8"
+val supportedScalaVersions = List(scala213, scala212)
 
 ThisBuild / scalaVersion     := scala213
 ThisBuild / version          := "0.1.0"
