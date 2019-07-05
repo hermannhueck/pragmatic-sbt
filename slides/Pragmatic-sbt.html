@@ -200,28 +200,28 @@ in 7 examples. Each example is a build in it's own root directory: ./example??
 Beginning with very simple sbt examples the later examples are becoming more
 structured and more complex showing multi-project builds and cross version builds.
 
-Recommended tutorial in the sbt reference guide:
+Recommended tutorial to start with sbt:
 
 - https://www.scala-sbt.org/1.x/docs/sbt-by-example.html
 
 ---
 
-# Agenda
+# Agenda (1/2)
 <br/>
 
 1. [sbt without build file](#sbt_without_buildfile)
 1. [sbt new](#sbt_new)
 1. [Creating an application from the template](#create_application)
-1. [Community Plugins](#community_plugins)
-1. [Aliases](#aliases)
 1. [Scala REPL](#scala_repl)
+1. [Aliases](#aliases)
+1. [Plugins](#plugins)
 1. [Multi-project Builds](#multi_project_builds)
 1. [Cross Builds](#cross_builds)
 1. [Source code for different Scala versions](#source_code_for_different_scala_versions)
 1. [Library Dependencies](#library_dependencies)
-1. [App Packaging](#app_packaging)
-1. [TODO](#todo)
-1. [TODO](#todo)
+1. [Packaging](#packaging)
+1. [Publishing](#publishing)
+1. [Installable Packages with *sbt-native-packager*](#installable_packages)
 1. [TODO](#todo)
 1. [TODO](#todo)
 1. [TODO](#todo)
@@ -242,7 +242,7 @@ name: sbt_without_buildfile
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example01
+  &nbsp; &nbsp; &nbsp; *.../example01*
 ]
 
 ---
@@ -250,8 +250,9 @@ name: sbt_without_buildfile
 ## No build file
 <br/>
 
-sbt uses the same kind of directory structure as Maven and Gradle.<br/>
-We have a Scala/Java source structure in your root directory:
+sbt uses the same kind of directory structure like Maven and Gradle.
+
+We have a Scala/Java source structure in your root directory but no *build.sbt*.
 
 ```sh
 example01 $ tree
@@ -398,7 +399,7 @@ name: sbt_new
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example02
+  &nbsp; &nbsp; &nbsp; *.../example02*
 ]
 
 ---
@@ -518,12 +519,12 @@ name: create_application
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example03
+  &nbsp; &nbsp; &nbsp; *.../example03*
 ]
 
 ---
 
-## WeatherApp
+## Weather Application
 
 The app queries the weather from https://www.metaweather.com/api/ using gigahorse-okhttp
 as HTTP client and play-json to parse the JSON response.
@@ -531,7 +532,7 @@ as HTTP client and play-json to parse the JSON response.
 --
 
 ```sh
-HermannMBP:example03 hermann$ tree
+example03 $ tree
 .
 ├── build.sbt
 ├── project
@@ -548,38 +549,25 @@ HermannMBP:example03 hermann$ tree
         └── scala
             └── weather
                 └── WeatherSpec.scala
-
-8 directories, 7 files
 ```
 
 ---
 
-<br/>
 ### project/Dependencies.scala
-<br/>
 
 ```scala
 import sbt._
 
-object Versions {
-  val playVersion = "2.7.3"
-  val okHttpVersion = "0.5.0"
-  val scalaTestVersion = "3.0.5"
-}
-
 object Dependencies {
-  import Versions._
-  lazy val playJson = "com.typesafe.play" %% "play-json" % playVersion
-  lazy val okHttp = "com.eed3si9n" %% "gigahorse-okhttp" % okHttpVersion
-  lazy val scalaTest = "org.scalatest" %% "scalatest" % scalaTestVersion
+  lazy val playJson = "com.typesafe.play" %% "play-json" % "2.7.3"
+  lazy val okHttp = "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.0"
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.5"
 }
 ```
 
----
+--
 
-<br/>
 ### build.sbt
-<br/>
 
 ```scala
 import Dependencies._
@@ -592,11 +580,7 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "Example03",
-    libraryDependencies ++= Seq(
-      okHttp,
-      playJson,
-      scalaTest % Test,
-    )
+    libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test)
   )
 ```
 
@@ -637,11 +621,10 @@ object WeatherApp extends App {
 
 ---
 
-
 class: middle, center
-name: community_plugins
+name: scala_repl
 
-# 4. Community Plugins
+# 4. Scala REPL
 <br/>
 <br/>
 <br/>
@@ -650,24 +633,192 @@ name: community_plugins
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example03
+  &nbsp; &nbsp; &nbsp;  *.../example03*
+]
+
+---
+
+The **console** command starts a Scala REPL from the sbt prompt
+with the project dependencies and classes on the classpath.
+
+The **initialCommands** setting in *build.sbt* initializes the REPL session -
+typically used for the imports you need in every session of this project.
+
+--
+
+```scala
+ThisBuild / initialCommands :=
+  """
+    |import scala.concurrent._
+    |import scala.concurrent.duration._
+    |import scala.concurrent.ExecutionContext.Implicits.global
+    |import weather.WeatherLib._
+    |""".stripMargin
+```
+
+--
+
+```sh
+sbt:Example03> console
+[info] Starting scala interpreter...
+Welcome to Scala 2.12.8 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_212).
+Type in expressions for evaluation. Or try :help.
+
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import weather.WeatherLib._
+
+scala> weatherOf("Berlin")
+res0: scala.concurrent.Future[String] = Future(<not completed>)
+
+scala> Await.result(res0, 10.seconds)
+res1: String = showers
+```
+
+---
+
+class: middle, center
+name: aliases
+
+# 5. Aliases
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp;  *.../example03*
 ]
 
 ---
 
 <br/>
 <br/>
-<br/>
-Project specific plugins are installed in ...
-### project/plugins.sbt.
+Project specific aliases are defined in ...
+### *[project_root].sbtrc*
 
 --
 
 <br/>
 <br/>
+User specific aliases (valid in all projects of this user) are defined in ...
+### *~/.sbtrc*
+
+--
+
 <br/>
-User specific plugins (valid in all projects of this user) are installed in ...
-### ~/.sbt/1.0/plugins/plugins.sbt.
+<br/>
+```scala
+alias a = alias
+alias r = reload
+alias c = compile
+alias dl = dependencyList
+```
+
+---
+
+<br/>
+```sbt
+sbt:Example03> a
+	a = alias
+	r = reload
+	c = compile
+	dl = dependencyList
+```
+
+--
+
+```sbt
+sbt:Example03> r
+[info] Loading ...
+[info] Set current project to Example03 (in build file:.../example03/)
+```
+
+--
+
+```sh
+sbt:Example03> c
+[info] Compiling 2 Scala sources to .../example03/target/scala-2.12/classes ...
+[info] Done compiling.
+[success] Total time: 5 s, completed 02.07.2019 16:47:34
+```
+
+--
+
+```sh
+sbt:Example03> dl
+[info] Updating ProjectRef(uri("file:.../example03/"), "root")...
+[info] Done updating.
+[warn] There may be incompatibilities among your library dependencies; run 'evicted' to see detailed eviction warnings.
+[info] com.eed3si9n:gigahorse-core_2.12:0.5.0
+[info] com.eed3si9n:gigahorse-okhttp_2.12:0.5.0
+[info] com.example:example03_2.12:0.1.0
+[info] com.fasterxml.jackson.core:jackson-annotations:2.9.8
+[info] com.fasterxml.jackson.core:jackson-core:2.9.8
+...
+```
+
+---
+
+class: middle, center
+name:  plugins
+
+# 6.  Plugins
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; *.../example03*
+]
+
+---
+
+<br/>
+<br/>
+## Preinstalled Plugins
+<br/>
+<br/>
+Some plugins are already installed and enabled in sbt.
+
+The **plugins** command lists the currently installed plugins.
+
+--
+
+<br/>
+```html
+sbt:Example03> plugins
+In file:.../example03/
+	sbt.plugins.IvyPlugin: enabled in root
+	sbt.plugins.JvmPlugin: enabled in root
+	sbt.plugins.CorePlugin: enabled in root
+	sbt.ScriptedPlugin
+	sbt.plugins.SbtPlugin
+	sbt.plugins.JUnitXmlReportPlugin: enabled in root
+	sbt.plugins.Giter8TemplatePlugin: enabled in root
+```
+
+---
+
+<br/>
+<br/>
+## User-installed Plugins
+<br/>
+<br/>
+
+- Project specific plugins are installed in<br/>
+**project/plugins.sbt**.
+
+--
+
+- User specific plugins (valid in all projects of this user) are installed in<br/>
+**~/.sbt/1.0/plugins/plugins.sbt**.
 
 <br/>
 <br/>
@@ -824,137 +975,61 @@ addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.1.0-M14-4")
 
 ---
 
-class: middle, center
-name: aliases
+## Plugin: *sbt-native-packager*
 
-# 5. Aliases
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-&nbsp;
+enables Java/Scala app packaging in different package formats:
+zip, dmg (macOS), msi (Windows), deb and rpm (Linux) and docker.
 
-.footnote[
-  &nbsp; &nbsp; &nbsp; .../example03
-]
+Sie Chapter 11: [App Packaging](#app_packaging)
 
----
-
-<br/>
-<br/>
-<br/>
-<br/>
-
-Project specific aliases are defined in ...
-### build.sbt.
+Web site: https://sbt-native-packager.readthedocs.io/en/stable/<br/>
+Source code: https://github.com/sbt/sbt-native-packager
 
 --
 
-<br/>
-<br/>
-<br/>
-<br/>
-
-User specific aliases (valid in all projects of this user) are defined in ...
-### ~/.sbt/1.0/global.sbt.
-
----
-
+### project/plugins.sbt
 ```scala
-addCommandAlias("a", "alias")
-addCommandAlias("r", "reload")
-addCommandAlias("c", "compile")
-addCommandAlias("?", "help")
-addCommandAlias("du", "dependencyUpdates")
-```
---
-```sh
-sbt:Example03> a
-	a = alias
-	r = reload
-	c = compile
-	? = help
-	du = dependencyUpdates
-```
---
-```sh
-sbt:Example03> r
-[info] Loading ...
-[info] Set current project to Example03 (in build file:.../example03/)
-```
---
-```sh
-sbt:Example03> c
-[info] Compiling 2 Scala sources to .../example03/target/scala-2.12/classes ...
-[info] Done compiling.
-[success] Total time: 5 s, completed 02.07.2019 16:47:34
-```
---
-```sh
-sbt:Example03> du
-[info] Found 3 dependency updates for example03
-[info]   com.typesafe.play:play-json  : 2.7.3  -> 2.7.4          
-[info]   org.scala-lang:scala-library : 2.12.8          -> 2.13.0
-[info]   org.scalatest:scalatest:test : 3.0.5  -> 3.0.8          
-[success] Total time: 0 s, completed 02.07.2019 16:47:46
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.24")
 ```
 
----
-
-class: middle, center
-name: scala_repl
-
-# 6. Scala REPL
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
-&nbsp;
-
-.footnote[
-  &nbsp; &nbsp; &nbsp; .../example03
-]
-
----
-
-The **console** command starts a Scala REPL from the sbt prompt.
-
-The **initialCommands** setting in *build.sbt* initializes the REPL session -
-typically used for the import you need in every session of this project.
-
---
-
+### build.sbt
 ```scala
-ThisBuild / initialCommands :=
-  """
-    |import scala.concurrent._
-    |import scala.concurrent.duration._
-    |import scala.concurrent.ExecutionContext.Implicits.global
-    |import weather.WeatherLib._
-    |""".stripMargin
+enablePlugin(JavaAppPackaging)
+```
+
+This plugin must explicitly be enabled in *build.sbt*.
+
+---
+
+class: middle
+
+Having installed all these plugins our plugin list becomes somewhat longer:
+
+```html
+sbt:Example03> plugins
+In file:.../example03/
+	sbt.plugins.IvyPlugin: enabled in root
+	sbt.plugins.JvmPlugin: enabled in root
+	sbt.plugins.CorePlugin: enabled in root
+	sbt.ScriptedPlugin
+	sbt.plugins.SbtPlugin
+	sbt.plugins.JUnitXmlReportPlugin: enabled in root
+	sbt.plugins.Giter8TemplatePlugin: enabled in root
+	coursier.sbtcoursier.CoursierPlugin: enabled in root
+	coursier.sbtcoursiershared.SbtCoursierShared: enabled in root
+	net.vonbuchholtz.sbt.dependencycheck.DependencyCheckPlugin: enabled in root
+	com.typesafe.sbt.GitBranchPrompt
+	com.typesafe.sbt.GitPlugin: enabled in root
+	com.typesafe.sbt.GitVersioning
+	com.timushev.sbt.updates.UpdatesPlugin: enabled in root
+	com.oradian.sbt.SbtShPlugin: enabled in root
+	net.virtualvoid.sbt.graph.DependencyGraphPlugin: enabled in root
 ```
 
 --
 
-```sh
-sbt:Example03> console
-[info] Starting scala interpreter...
-Welcome to Scala 2.12.8 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_212).
-Type in expressions for evaluation. Or try :help.
-
-import scala.concurrent._
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import weather.WeatherLib._
-
-scala> weatherOf("Berlin")
-res0: scala.concurrent.Future[String] = Future(<not completed>)
-
-scala> Await.result(res0, 10.seconds)
-res1: String = showers
-```
+This list is without *sbt-native-packager*.<br/>
+This plugin bundle adds a lot more plugins, one for each package format.
 
 ---
 
@@ -970,7 +1045,7 @@ name: multi_project_builds
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example04
+  &nbsp; &nbsp; &nbsp; *.../example04*
 ]
 
 ---
@@ -978,8 +1053,8 @@ name: multi_project_builds
 ## Multi-project Build
 
 <br/>
-In *example03* we kept all source code in one sbt project, the (implicitly defined) "root" project.
-The *src* directory was located directly under the project root directory.
+In *example03* we kept all source code in one sbt project, the "root" project.
+The *src* directory was located directly under the root directory of the build.
 
 <br/>
 Now we split the code into subprojects - "WeatherLib" and "WeatherApp" -
@@ -987,12 +1062,17 @@ with their own project directories "lib" and "app". The third subproject "root"
 does not have and does not need a "src" folder of its own. It is the over-arching
 project which controls the other two.
 
+--
+
 <br/>
 Subprojects are (if not specified otherwise) completely independent of each other.
 I.e: Tasks can be executed in parallel.
 
 <br/>
-The subprojects inherit settings from *ThisBuild*.
+The subprojects have completed unrelated settings. If a setting is undefined in a subproject,
+the default setting from *ThisBuild* is used.
+
+--
 
 <br/>
 More details:<br/>
@@ -1003,14 +1083,14 @@ https://www.scala-sbt.org/1.x/docs/Multi-Project.html
 ### Directory tree
 
 ```sh
-HermannMBP:example04 hermann$ tree
+example04 $ tree
 .
 ├── app
 │   └── src
-│       ├── main
-│       │   └── scala
-│       │       └── app
-│       │           └── WeatherApp.scala
+│       └── main
+│           └── scala
+│               └── app
+│                   └── WeatherApp.scala
 ├── lib
 │   └── src
 │       ├── main
@@ -1028,6 +1108,8 @@ HermannMBP:example04 hermann$ tree
 ```
 
 ---
+
+class: middle
 
 ### build.sbt
 
@@ -1049,10 +1131,7 @@ lazy val app = (project in file("app"))
   .dependsOn(lib)
   .settings(
     name := "WeatherApp",
-    initialCommands :=
-      """  // imports for the console
-        |import ...
-        |""".stripMargin,
+    initialCommands := """ ... // imports """.stripMargin,
   )
 
 lazy val lib = (project in file("lib"))
@@ -1069,7 +1148,7 @@ lazy val lib = (project in file("lib"))
 *root.aggregate(app, lib)* :
 - Every command issued in "root" is propagated to "app" and "lib".
 - e.g.: *compile* in "root" triggers *app/compile* and "lib/compile"
-- *app/compile* and "lib/compile" could be executed in parallel if they do not depend on each other.
+- *app/compile* and "lib/compile" could be executed in parallel if the subprojects do not depend on each other.
 
 --
 
@@ -1110,7 +1189,7 @@ sbt:WeatherLib> projects
 [info] 	   root
 ```
 --
-```sh
+```html
 sbt:WeatherLib> compile
 [info] Compiling 1 Scala source to .../example04/lib/target/scala-2.12/classes ...
 [info] Done compiling.
@@ -1122,7 +1201,7 @@ sbt:WeatherLib> project root
 [info] Set current project to Example04 (in build file:.../example04/)
 ```
 --
-```sh
+```html
 sbt:Example04> compile
 [info] Compiling 1 Scala source to .../example04/app/target/scala-2.12/classes ...
 [info] Done compiling.
@@ -1143,7 +1222,7 @@ name: cross_builds
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example05
+  &nbsp; &nbsp; &nbsp; *.../example05*
 ]
 
 ---
@@ -1170,9 +1249,9 @@ E.g.: &nbsp; *play-json* becomes *play-json_2.13*.
 ```scala
 import Dependencies._
 
-val scala212 = "2.12.8"
 val scala213 = "2.13.0"
-val supportedScalaVersions = List(scala212, scala213)
+val scala212 = "2.12.8"
+val supportedScalaVersions = List(scala213, scala212)
 
 ThisBuild / scalaVersion     := scala213
 ThisBuild / version          := "0.1.0"
@@ -1192,7 +1271,7 @@ lazy val app = (project in file("app"))
   .settings(
     name := "WeatherApp",
     crossScalaVersions := supportedScalaVersions,
-    initialCommands := """ ... // imports |""".stripMargin,
+    initialCommands := """ ... // imports """.stripMargin,
   )
 
 lazy val lib = (project in file("lib"))
@@ -1233,7 +1312,7 @@ lazy val lib = (project in file("lib"))
 
 ---
 
-```sh
+```html
 sbt:Example05> scalaVersion
 [info] app / scalaVersion
 [info] 	2.13.0
@@ -1245,7 +1324,7 @@ sbt:Example05> scalaVersion
 
 --
 
-```sh
+```html
 sbt:Example05> compile
 [info] Compiling 1 Scala source to .../example05/lib/target/scala-2.13/classes ...
 [info] Done compiling.
@@ -1256,7 +1335,7 @@ sbt:Example05> compile
 
 --
 
-```sh
+```html
 sbt:Example05> ++2.12.8 -v
 [info] Setting Scala version to 2.12.8 on 2 projects.
 [info] Switching Scala version on:
@@ -1270,7 +1349,7 @@ sbt:Example05> ++2.12.8 -v
 
 ---
 
-```sh
+```html
 sbt:Example05> compile
 [info] Compiling 1 Scala source to .../example05/lib/target/scala-2.12/classes ...
 [info] Done compiling.
@@ -1280,14 +1359,14 @@ sbt:Example05> compile
 
 --
 
-```sh
+```html
 sbt:Example05> clean
 [success] Total time: 1 s, completed 04.07.2019 12:48:27
 ```
 
 --
 
-```sh
+```html
 sbt:Example05> +compile
 [info] Setting Scala version to 2.13.0 on 2 projects.
 [info] Excluded 1 projects, run ++ 2.13.0 -v for more details.
@@ -1313,14 +1392,14 @@ sbt:Example05> +compile
 
 ---
 
-```sh
+```html
 sbt:Example05> project lib
 [info] Set current project to WeatherLib (in build file:.../example05/)
 ```
 
 --
 
-```sh
+```html
 sbt:WeatherLib> ++2.11.12! compile
 [info] Forcing Scala version to 2.11.12 on all projects.
 [info] Reapplying settings...
@@ -1376,7 +1455,7 @@ name: source_code_for_different_scala_versions
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example06
+  &nbsp; &nbsp; &nbsp; *.../example06*
 ]
 
 ---
@@ -1459,7 +1538,7 @@ name: library_dependencies
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example07
+  &nbsp; &nbsp; &nbsp; *.../example07*
 ]
 
 ---
@@ -1470,9 +1549,9 @@ class: middle
 <br>
 
 Create a directory named ***lib*** under your subproject's root and put the jars you need into it.
-sbt will add these jars to your subprojects classpath.
+sbt will add these jars to your subproject's classpath.
 
-This way of adding library dependencies is very uncommon but may be useful in some situations.
+This way of adding library dependencies is very uncommon, but may be useful in some situations.
 
 ---
 
@@ -1480,24 +1559,24 @@ This way of adding library dependencies is very uncommon but may be useful in so
 
 This is the usual way to define dependencies. We used it already in the first example.
 
-You have to specify or to extend the setting ***libraryDependencies*** which takes a *Seq[ModuleId]*.
+You have to specify the setting **libraryDependencies** which takes a *Seq[ModuleId]*.
 Each *ModuleId* consists of a groupId, artefactId and revision joined with the %-operator
-and optionally followed by a configuration such as "test" or Test (the type-safe way).
+and optionally followed by a configuration such as *"test"* or *Test* (the type-safe way).
 
 When using %% between groupId and artefactId sbt automatically detects the right binary
 Scala version of the library from the current setting of ***scalaVersion***.
 
 --
 
-```sbt
+```scala
 // gigahorse-okhttp for binary Scala version 2.12.x
 libraryDependencies += "com.eed3si9n" % "gigahorse-okhttp_2.12" % "0.5.0"
 ```
 
 --
 
-```sbt
-// gigahorse-okhttp using the current scalaVersion
+```scala
+// gigahorse-okhttp using the current scalaVersion setting
 libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.0"
 ```
 
@@ -1513,22 +1592,23 @@ See also: https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html
 
 Ending the revision number with a + selects the latest available subrevision of a library.
 
-```sbt
-// gigahorse-okhttp using the current scalaVersion
+```scala
+// gigahorse-okhttp using the latest 0.5.x revision for the current scalaVersion
 libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.+"
 ```
 
 --
 
 <br/>
-You may also specifiy "latest.release", "latest.milestone" or "latest.integration" instead of a revision number.
+You may also specifiy *"latest.release"*, *"latest.milestone"* or *"latest.integration"*
+instead of a revision number.
 
-```sbt
+```scala
 // depend on the latest avilable release of the gigahorse-okhttp module
 libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "latest.release"
 ```
 
-```sbt
+```scala
 // depend on the latest avilable integration (release or milestone) of the gigahorse-okhttp module
 libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "latest.integration"
 ```
@@ -1540,10 +1620,77 @@ See also: https://ant.apache.org/ivy/history/2.3.0/ivyfile/dependency.html#revis
 
 ---
 
-class: middle, center
-name: app_packaging
+## Resolvers
 
-# 11. App Packaging
+Resolvers is a Seq of locations looked up by sbt when resolving library dependencies.
+
+--
+
+## Default Resolvers
+
+Some resolvers are predefined by default. (Hence we don't need to define resolvers in many cases.)
+- the Maven2 repository at *https://repo1.maven.org/maven2/*
+- the local sbt cache at *~/.sbt/preloaded*
+- jars published locally to Ivy at *~/.ivy/local
+- the project resolver which resolves inter-project dependencies
+
+The default resolvers can be listed in a quite weird format with<br/>
+**show externalResolvers**
+
+To change or remove the default resolvers, you would need to override **externalResolvers**.
+
+---
+
+## User-defined Resolvers
+
+To add your own resolvers to the default ones, use the setting **resolvers**.<br/>
+To add an additional repository, use
+
+```sbt
+resolvers += "name" at "location"
+```
+
+--
+
+### Examples
+
+```sbt
+resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+```
+
+```sbt
+resolvers += "Sonatype OSS Public" at "https://oss.sonatype.org/content/repositories/public"
+```
+
+```scala
+// using a predefined shortcut for the "Sonatype public" repo
+resolvers += Resolver.sonatypeRepo("public")
+```
+
+```sbt
+resolvers += "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases"
+```
+
+```scala
+// using a predefined shortcut for the "Typesafe releases" repo
+resolvers += Resolver.typesafeRepo("releases")
+```
+
+---
+
+class: middle
+
+### More details on resolvers
+
+<br/>
+https://www.scala-sbt.org/1.x/docs/Resolvers.html
+
+---
+
+class: middle, center
+name: packaging
+
+# 11. Packaging
 <br/>
 <br/>
 <br/>
@@ -1552,7 +1699,42 @@ name: app_packaging
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example08
+  &nbsp; &nbsp; &nbsp; *.../example07*
+]
+
+---
+
+class: middle, center
+name: publishing
+
+# 12. Publishing
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; *.../example07*
+]
+
+---
+
+class: middle, center
+name: installable_packages
+
+# 13. Installable Packages
+# with *sbt-native-packager*
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; *.../example08*
 ]
 
 ---
@@ -1569,7 +1751,7 @@ name: TODO
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example04
+  &nbsp; &nbsp; &nbsp; *.../example04*
 ]
 
 ---
@@ -1586,7 +1768,7 @@ name: TODO
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; .../example04
+  &nbsp; &nbsp; &nbsp; *.../example04*
 ]
 
 ---
