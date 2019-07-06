@@ -222,9 +222,9 @@ Recommended tutorial to start with sbt:
 1. [Packaging](#packaging)
 1. [Publishing](#publishing)
 1. [Installable Packages with *sbt-native-packager*](#installable_packages)
-1. [TODO](#todo)
-1. [TODO](#todo)
-1. [TODO](#todo)
+1. [Settings and Tasks](#settings_tasks)
+1. [Task Dependency Graph](#dependency_graph)
+1. [Scopes](#scopes)
 1. [TODO](#todo)
 1. [References](#references)
 
@@ -978,7 +978,7 @@ addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.1.0-M14-4")
 ## Plugin: *sbt-native-packager*
 
 enables Java/Scala app packaging in different package formats:
-zip, dmg (macOS), msi (Windows), deb and rpm (Linux) and docker.
+zip, dmg (macOS), msi (Windows), deb and rpm (Linux) and docker etc.
 
 Sie Chapter 11: [App Packaging](#app_packaging)
 
@@ -1262,14 +1262,15 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .settings(
     name := "Example05",
-    crossScalaVersions := Nil, // set to Nil on the aggregating project
     publish / skip := true,
+    crossScalaVersions := Nil, // set to Nil on the aggregating project
   )
 
 lazy val app = (project in file("app"))
   .dependsOn(lib)
   .settings(
     name := "WeatherApp",
+    publish / skip := true,
     crossScalaVersions := supportedScalaVersions,
     initialCommands := """ ... // imports """.stripMargin,
   )
@@ -1704,6 +1705,64 @@ name: packaging
 
 ---
 
+class: middle
+
+## Commands for package generation
+<br/>
+
+sbt comes with some commands for the generation of packages (jar files).
+
+- *packageBin* &nbsp; &nbsp; Produces a binary jar.
+- *packageSrc* &nbsp; &nbsp; Produces a jar containing sources and resources.
+- *packageDoc* &nbsp; &nbsp;Produces a jar containing API documentation.
+- *package* &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Is an alias for *packageBin*.
+
+These commands generate jar files under<br/>
+**[subproject_root]/target/scala-[scalaVersion]**
+
+In a cross build project all commands can be prefixed with + in order to package jars
+for all supported scala versions of the build.
+
+---
+
+```html
+sbt:Example07> project lib
+[info] Set current project to WeatherLib (in build file:.../example07/)
+```
+--
+```html
+sbt:WeatherLib> packageBin
+[info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0.jar ...
+[info] Done packaging.
+[success] Total time: 1 s, completed 05.07.2019 18:01:09
+```
+--
+```html
+sbt:WeatherLib> packageSrc
+[info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0-sources.jar ...
+[info] Done packaging.
+[success] Total time: 0 s, completed 05.07.2019 18:01:16
+```
+--
+```html
+sbt:WeatherLib> packageDoc
+[info] Main Scala API documentation to .../example07/lib/target/scala-2.13/api...
+model contains 3 documentable templates
+[info] Main Scala API documentation successful.
+[info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0-javadoc.jar ...
+[info] Done packaging.
+[success] Total time: 1 s, completed 05.07.2019 18:01:25
+```
+--
+```sh
+example07 $ ls -1 lib/target/scala-2.13/*.jar
+lib/target/scala-2.13/weatherlib_2.13-0.1.0-javadoc.jar
+lib/target/scala-2.13/weatherlib_2.13-0.1.0-sources.jar
+lib/target/scala-2.13/weatherlib_2.13-0.1.0.jar
+```
+
+---
+
 class: middle, center
 name: publishing
 
@@ -1718,6 +1777,106 @@ name: publishing
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example07*
 ]
+
+---
+
+class: middle
+
+## Local Publishing
+<br/>
+
+- Using the command **publishLocal** you can publish a jar (typically a library jar) to the
+local Ivy repository under **~/.ivy2/local**.
+
+- Using the command **publishM2** you can publish a jar (typically a library jar) to the
+local Maven2 repository under **~/.m2/repository**.
+
+- **publishMavenStyle** is *true* (default) if the jars are published in Maven style (with a pom file)
+or *false* if the Ivy style is used.
+
+---
+
+<br/>
+<br/>
+<br/>
+<br/>
+
+```html
+sbt:Example07> project lib
+[info] Set current project to WeatherLib (in build file:.../example07/)
+```
+--
+```html
+sbt:WeatherLib> publishMavenStyle
+[info] true
+```
+--
+```html
+sbt:WeatherLib> publishLocal
+[info] Writing Ivy file .../example07/lib/target/scala-2.13/resolution-cache/com.example/weatherlib_2.13/0.1.0/resolved.xml.xml
+[info] Wrote .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0.pom
+[info] :: delivering :: com.example#weatherlib_2.13;0.1.0 :: 0.1.0 :: release :: Fri Jul 05 19:38:22 CEST 2019
+[info] 	delivering ivy file to .../example07/lib/target/scala-2.13/ivy-0.1.0.xml
+[info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/poms/weatherlib_2.13.pom
+[info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/jars/weatherlib_2.13.jar
+[info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/srcs/weatherlib_2.13-sources.jar
+[info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/docs/weatherlib_2.13-javadoc.jar
+[info] 	published ivy to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/ivys/ivy.xml
+[success] Total time: 1 s, completed 05.07.2019 19:38:23
+```
+
+---
+
+class: middle
+
+## Publishing to a resolver (ie.e to a remote repo)
+<br/>
+
+To publish a jar to a remote repo (in Maven style or in Ivy style) ...
+
+- define the resolver (the destination to publish to) with the **publishTo** setting
+- add the credentials for that resolver to the **credentials** setting
+- (or alternatively and preferably - load the credentials from a properties file)
+- run the **publish** command
+
+<br/>
+For examples and more details see:<br/>
+https://www.scala-sbt.org/1.x/docs/Publishing.html
+
+---
+
+## What to publish?
+
+Publishing makes only sense for libraries, not for applications.
+
+To prevent a subproject from being published add the setting:<br/>
+**publish / skip := true**
+
+--
+
+```scala
+...
+lazy val root = (project in file("."))
+  .aggregate(app, lib)
+  .settings(
+    name := "Example05",
+    publish / skip := true, // no code to publish
+    ...
+  )
+lazy val app = (project in file("app"))
+  .dependsOn(lib)
+  .settings(
+    name := "WeatherApp",
+    publish / skip := true, // no need to publish the app
+    ...
+  )
+lazy val lib = (project in file("lib"))
+  .settings(
+    name := "WeatherLib",
+    // don't skip publishing in the library project
+    ...
+  )
+```
 
 ---
 
@@ -1739,10 +1898,280 @@ name: installable_packages
 
 ---
 
-class: middle, center
-name: TODO
+class: middle
 
-# ???. TODO
+## Library or App?
+<br/>
+
+If you write a library you have to publish it to a public repo
+so that others can use it as a library dependency.
+
+This can be done with sbt without additional plugin.
+
+--
+
+If you write an application you have to generate a installable package in the format
+of the intended destination system, e.g. a Debian package for Debian or Ubuntu Linux
+or an MSI package for Windows or a Docker image or some other installable format.
+
+The **sbt-native-packager** plugin allows you to create a software distribution
+of an application in any format.
+
+---
+
+class: middle
+
+## Enable JavaAppPackaging
+<br/>
+
+### project/plugins.sbt
+```scala
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.24")
+```
+
+### build.sbt
+```scala
+lazy val app = (project in file("app"))
+  .dependsOn(lib)
+  .enablePlugins(JavaAppPackaging)
+  .settings( ... )
+```
+
+The plugin must be enabled for the project you want to package.
+
+---
+
+## Staging
+
+The **stage** command creates a local directory ( *.../target/universal/stage* )
+with all the files laid out as they would be in the final distribution.
+
+--
+
+```html
+sbt:Example08> project app
+[info] Set current project to WeatherApp (in build file:.../example08/)
+sbt:WeatherApp> stage
+[info] Packaging ...
+...
+```
+
+--
+
+```sh
+example08 $ tree app/target/universal/stage
+app/target/universal/stage
+├── bin
+│   ├── weatherapp
+│   └── weatherapp.bat
+└── lib
+    ├── com.eed3si9n.gigahorse-core_2.13-0.5.0.jar
+    ├── com.eed3si9n.gigahorse-okhttp_2.13-0.5.0.jar
+    ├── com.example.weatherapp-0.1.0.jar
+    ├── com.example.weatherlib-0.1.0.jar
+    ├── com.fasterxml.jackson.core.jackson-annotations-2.9.8.jar
+    ├── ...
+    └── org.slf4j.slf4j-api-1.7.26.jar
+```
+
+---
+
+<br/>
+<br/>
+<br/>
+
+*bin/weatherapp* can start the application on Mac and Linux.<br/>
+*bin/weatherapp.bat* can start the application on Windows.
+<br/>
+<br/>
+
+```sh
+example08 $ app/target/universal/stage/bin/weatherapp 
+
+Scala version 2.13.0:
+The weather in Berlin is:   light rain
+
+example08 $
+```
+
+---
+
+## Zip distribution
+
+The **universal:packageBin** command creates a zip file containg all the files staged.
+The same can be achieved with a simple **dist** command.
+
+--
+
+```html
+sbt:WeatherApp> universal:packageBin
+[info] ...
+[info] Your package is ready in .../example08/app/target/universal/weatherapp-0.1.0.zip
+[success] Total time: 2 s, completed 06.07.2019 00:33:12
+```
+
+--
+
+```sh
+example08 $ unzip -l app/target/universal/weatherapp-0.1.0.zip 
+Archive:  app/target/universal/weatherapp-0.1.0.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+     5007  07-06-2019 00:16   weatherapp-0.1.0/lib/com.example.weatherapp-0.1.0.jar
+     6357  07-05-2019 23:22   weatherapp-0.1.0/lib/com.example.weatherlib-0.1.0.jar
+    33391  12-16-2018 00:06   weatherapp-0.1.0/lib/com.fasterxml.jackson.datatype.jackson-datatype-jdk8-2.9.8.jar
+    42704  06-19-2019 02:15   weatherapp-0.1.0/lib/com.eed3si9n.gigahorse-okhttp_2.13-0.5.0.jar
+   160144  06-19-2019 02:15   weatherapp-0.1.0/lib/com.eed3si9n.gigahorse-core_2.13-0.5.0.jar
+   425763  05-19-2019 19:38   weatherapp-0.1.0/lib/com.squareup.okhttp3.okhttp-3.14.2.jar
+           ...
+   726698  06-12-2019 12:45   weatherapp-0.1.0/lib/com.typesafe.play.play-json_2.13-2.7.4.jar
+    10567  07-06-2019 00:33   weatherapp-0.1.0/bin/weatherapp
+     6317  07-06-2019 00:33   weatherapp-0.1.0/bin/weatherapp.bat
+---------                     -------
+ 14304396                     23 files
+```
+
+---
+
+## Gzipped tarball distribution
+
+The **universal:packageZipTarball** command creates a tgz file containg all the files staged.
+
+--
+
+```html
+sbt:WeatherApp> universal:packageZipTarball
+[info] ...
+Making /var/folders/.../weatherapp-0.1.0/bin/weatherapp executable
+Making /var/folders/.../weatherapp-0.1.0/bin/weatherapp.bat executable
+Running with tar -pcvf /var/folders/zg/1y5syxvj0mb5v3v0p0m8mhnc0000gn/T/sbt_68ba81f2/weatherapp-0.1.0.tar weatherapp-0.1.0
+a weatherapp-0.1.0
+a weatherapp-0.1.0/bin
+a weatherapp-0.1.0/lib
+a weatherapp-0.1.0/lib/com.squareup.okio.okio-1.17.2.jar
+...
+a weatherapp-0.1.0/bin/weatherapp
+a weatherapp-0.1.0/bin/weatherapp.bat
+[success] Total time: 1 s, completed 06.07.2019 17:27:55
+```
+
+--
+
+```sh
+example08 $ unzip -l app/target/universal/weatherapp-0.1.0.zip 
+HermannMBP:example08 hermann$ tar -tzf app/target/universal/weatherapp-0.1.0.tgz 
+weatherapp-0.1.0/
+weatherapp-0.1.0/bin/
+weatherapp-0.1.0/lib/
+weatherapp-0.1.0/lib/com.squareup.okio.okio-1.17.2.jar
+...
+weatherapp-0.1.0/bin/weatherapp
+weatherapp-0.1.0/bin/weatherapp.bat
+```
+
+---
+
+## OSX DMG distribution
+
+The **universal:packageOsxDmg** command creates a dmg file for macOS.
+
+--
+
+```html
+sbt:WeatherApp> universal:packageOsxDmg
+[info] ...
+created: .../example08/app/target/universal/weatherapp-0.1.0.dmg
+/dev/disk3          	GUID_partition_scheme          	
+/dev/disk3s1        	Apple_HFS                      	.../example08/app/target/universal/dmg/weatherapp-0.1.0
+"disk3" ejected.
+[success] Total time: 2 s, completed 06.07.2019 00:52:29
+```
+
+--
+
+```sh
+example08 $ hdiutil mount app/target/universal/weatherapp-0.1.0.dmg
+/dev/disk3          	GUID_partition_scheme          	
+/dev/disk3s1        	Apple_HFS                      	/Volumes/weatherapp-0.1.0
+
+example08 $ tree /Volumes/weatherapp-0.1.0
+/Volumes/weatherapp-0.1.0
+├── bin
+│   ├── weatherapp
+│   └── weatherapp.bat
+└── lib
+    ├── com.eed3si9n.gigahorse-okhttp_2.13-0.5.0.jar
+    ├── com.example.weatherapp-0.1.0.jar
+    ├── com.example.weatherlib-0.1.0.jar
+    ├── ...
+```
+
+---
+
+## Dockerize the App
+
+The command **docker:publishLocal** creates a docker image with the app.
+
+--
+
+```html
+sbt:WeatherApp> docker:publishLocal
+...
+[info] Sending build context to Docker daemon  14.33MB
+[info] Step 1/15 : FROM openjdk:8 as stage0
+[info]  ---> b8d3f94869bb
+...
+[info] Step 15/15 : CMD []
+[info]  ---> Running in a1e6517b25a4
+[info] Removing intermediate container a1e6517b25a4
+[info]  ---> 96d21665e894
+[info] Successfully built 96d21665e894
+[info] Successfully tagged weatherapp:0.1.0
+[info] Built image weatherapp with tags [0.1.0]
+[success] Total time: 10 s, completed 06.07.2019 01:29:03
+```
+
+--
+
+```sh
+example08 $ docker run weatherapp:0.1.0
+
+Scala version 2.13.0:
+The weather in Berlin is:   light rain
+
+example08 $```
+
+---
+
+<br/>
+<br/>
+<br/>
+<br/>
+**sbt-native-packager** supports many more archetypes and formats.
+
+These examples used the *JavaAppPackaging* archtype (for simple CLI applications)
+For Java server apps you shold use the *JavaServerAppPackaging* archtype.
+
+--
+
+<br/>
+The general idea is "native packaging". I.e. create a Windows package on a Windows system,
+create a Debian package on a Debian based Linux system (Debian or Ubuntu), an RPM package
+on Redhat or SuSE Linux and a DMG package on a Mac.
+
+--
+
+<br/>
+For more information read the docs at:
+
+https://sbt-native-packager.readthedocs.io/
+
+---
+
+class: middle, center
+name: settings_tasks
+
+# 14. Settings and Tasks
 <br/>
 <br/>
 <br/>
@@ -1757,9 +2186,26 @@ name: TODO
 ---
 
 class: middle, center
-name: TODO
+name: dependency_graph
 
-# ???. TODO
+# 15. Task Dependency Graph
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  &nbsp; &nbsp; &nbsp; *.../example04*
+]
+
+---
+
+class: middle, center
+name: scopes
+
+# 16. Scopes
 <br/>
 <br/>
 <br/>
@@ -1776,7 +2222,7 @@ name: TODO
 class: middle, center
 name: references
 
-# ???. References
+# 17. References
 <br/>
 <br/>
 <br/>
