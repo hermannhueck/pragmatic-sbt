@@ -17,11 +17,11 @@ inThisBuild(
 
 lazy val root = (project in file("."))
   .aggregate(app, lib)
-  .enablePlugins(JavaAppPackaging)
-  .settings(
+   // JavaAppPackaging not enabled for the root without source code
+   .settings(
     name := "Example08",
-    crossScalaVersions := Nil,
     publish / skip := true,
+    crossScalaVersions := Nil,
   )
 
 lazy val app = (project in file("app"))
@@ -30,6 +30,7 @@ lazy val app = (project in file("app"))
   .settings(
     name := "WeatherApp",
     maintainer := (ThisBuild / maintainer).value,
+    publish / skip := true,
     crossScalaVersions := supportedScalaVersions,
     initialCommands :=
       """
@@ -41,7 +42,7 @@ lazy val app = (project in file("app"))
   )
 
 lazy val lib = (project in file("lib"))
-  .enablePlugins(JavaAppPackaging)
+   // JavaAppPackaging not enabled for the library
   .settings(
     name := "WeatherLib",
     maintainer := (ThisBuild / maintainer).value,

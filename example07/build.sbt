@@ -13,14 +13,15 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .settings(
     name := "Example07",
+    publish / skip := true, // no code to publish
     crossScalaVersions := Nil,
-    publish / skip := true,
   )
 
 lazy val app = (project in file("app"))
   .dependsOn(lib)
   .settings(
     name := "WeatherApp",
+    publish / skip := true,  // no need to publish the app
     crossScalaVersions := supportedScalaVersions,
     initialCommands :=
       """
@@ -34,6 +35,7 @@ lazy val app = (project in file("app"))
 lazy val lib = (project in file("lib"))
   .settings(
     name := "WeatherLib",
+    // don't skip publishing in the library project
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test),
   )

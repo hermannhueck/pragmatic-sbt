@@ -8,13 +8,13 @@ object Dependencies {
 }
 */
 
-/*
+
 object Dependencies {
   lazy val playJson = "com.typesafe.play" %% "play-json" % "2.7.+"
   lazy val okHttp = "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.+"
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.+"
 }
-*/
+
 
 /*
 object Dependencies {
@@ -24,8 +24,10 @@ object Dependencies {
 }
 */
 
+/*
 object Dependencies {
   lazy val playJson = "com.typesafe.play" %% "play-json" % "latest.release"
   lazy val okHttp = "com.eed3si9n" %% "gigahorse-okhttp" % "latest.release"
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "latest.release"
 }
+*/

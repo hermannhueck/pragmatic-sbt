@@ -13,14 +13,15 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .settings(
     name := "Example06",
-    crossScalaVersions := Nil,
     publish / skip := true,
+    crossScalaVersions := Nil,
   )
 
 lazy val app = (project in file("app"))
   .dependsOn(lib)
   .settings(
     name := "WeatherApp",
+    publish / skip := true,
     crossScalaVersions := supportedScalaVersions,
     initialCommands :=
       """
