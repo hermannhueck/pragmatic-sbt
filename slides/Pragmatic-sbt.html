@@ -206,7 +206,7 @@ Recommended tutorial to start with sbt:
 
 ---
 
-# Agenda (1/2)
+# Agenda
 <br/>
 
 1. [sbt without build file](#sbt_without_buildfile)
@@ -222,10 +222,10 @@ Recommended tutorial to start with sbt:
 1. [Packaging](#packaging)
 1. [Publishing](#publishing)
 1. [Installable Packages with *sbt-native-packager*](#installable_packages)
-1. [Settings and Tasks](#settings_tasks)
-1. [Task Dependency Graph](#dependency_graph)
+1. [Predefined Settings and Tasks](#predefined_settings_tasks)
+1. [Custom Settings and Tasks](#custom_settings_tasks)
 1. [Scopes](#scopes)
-1. [TODO](#todo)
+1. [Ammonite REPL](#ammonite_repl)
 1. [References](#references)
 
 ---
@@ -2139,7 +2139,7 @@ example08 $ docker run weatherapp:0.1.0
 Scala version 2.13.0:
 The weather in Berlin is:   light rain
 
-example08 $```
+```
 
 ---
 
@@ -2169,9 +2169,9 @@ https://sbt-native-packager.readthedocs.io/
 ---
 
 class: middle, center
-name: settings_tasks
+name: predefined_settings_tasks
 
-# 14. Settings and Tasks
+# 14. Predefined Settings and Tasks
 <br/>
 <br/>
 <br/>
@@ -2180,15 +2180,143 @@ name: settings_tasks
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; *.../example04*
+  &nbsp; &nbsp; &nbsp; *.../example08*
 ]
 
 ---
 
-class: middle, center
-name: dependency_graph
+## Keys
 
-# 15. Task Dependency Graph
+There are 3 flavours of keys reflected in 3 key types:
+
+- **SettingKey[T]**: a key for a value computed once (the value is computed when loading the subproject, and kept around).
+
+- **TaskKey[T]**: a key for a value, called a task, that has to be recomputed each time, potentially with side effects.
+
+- **InputKey[T]**: a key for a task that has command line arguments as input. (We will ignore them here.)
+
+--
+
+sbt provides a bunch of predefined keys (defined in *sbt.Keys*):<br/>
+https://www.scala-sbt.org/release/api/sbt/Keys$.html
+
+### Examples:
+
+- *name* is a *SettingKey[String]*.
+- *libraryDependencies* is a *SettingKey[Seq[String]]*.
+- *compile* is a *TaskKey[CompileAnalysis]*.
+- *test* is a *TaskKey[Unit]*.
+- *packageBin* is a *TaskKey[File]*.
+
+---
+
+## Display predefined Settings
+
+A setting can be displayed by just invoking the setting's name at the sbt prompt.
+(You can also precede the settings name with the **show** command.)
+
+--
+
+<br/>
+```html
+sbt:Example08> project lib
+[info] Set current project to WeatherLib (in build file:.../example08/)
+```
+
+```html
+sbt:WeatherLib> show name
+[info] WeatherLib
+```
+
+```html
+sbt:WeatherLib> libraryDependencies
+[info] * org.scala-lang:scala-library:2.13.0
+[info] * com.eed3si9n:gigahorse-okhttp:0.5.+
+[info] * com.typesafe.play:play-json:2.7.+
+[info] * org.scalatest:scalatest:3.0.+:test
+```
+
+---
+
+## Maniplulating the value of a setting
+
+Values of settings are typically defined in the build file (*build.sbt*).
+They can also be set at the command prompt with the **set** command.
+
+--
+
+<br/>
+```html
+sbt:WeatherLib> set libraryDependencies += "org.typelevel" %% "cats-core" % "1.6.1"
+[info] Defining libraryDependencies
+[info] The new value will be used by allDependencies, dependencyPositions, dependencyUpdatesData
+[info] Reapplying settings...
+[info] Set current project to WeatherLib (in build file:.../example08/)
+```
+--
+```html
+sbt:WeatherLib> libraryDependencies
+[info] * org.scala-lang:scala-library:2.13.0
+[info] * com.eed3si9n:gigahorse-okhttp:0.5.+
+[info] * com.typesafe.play:play-json:2.7.+
+[info] * org.scalatest:scalatest:3.0.+:test
+[info] * org.typelevel:cats-core:1.6.1
+```
+
+--
+
+<br/>
+- **settings**: &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;shows a list of the most common predefined settings
+- **settings -v**: &nbsp; &nbsp; extends that list
+- **settings -V**: &nbsp; &nbsp; displays all available settings
+
+---
+
+## Predefined Tasks
+
+Tasks (like *compile*, *test* or *packageBin*) are mostly predefined in sbt.
+But they can be redefined in the build file (*build.sbt*).
+
+A task containes executable code. To display its result you have to you run it.
+
+Just running a task does not show it#s result. To run it and see the result invoke it with **show**.
+
+--
+
+<br/>
+```html
+sbt:WeatherLib> compile
+[success] Total time: 1 s, completed 08.07.2019 15:06:00
+```
+
+```html
+sbt:WeatherLib> show compile
+[info] Analysis: 1 Scala source, 3 classes, 5 binary dependencies
+[success] Total time: 0 s, completed 08.07.2019 15:06:10
+```
+
+--
+
+<br/>
+- **tasks**: &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;shows a list of the most common predefined tasks
+- **tasks -v**: &nbsp; &nbsp; extends that list
+- **tasks -V**: &nbsp; &nbsp; displays all available tasks
+
+---
+
+class: middle
+
+<br/>
+More details at:
+
+https://www.scala-sbt.org/release/docs/Basic-Def.html
+
+---
+
+class: middle, center
+name: custom_settings_tasks
+
+# 15. Custom Settings and Tasks
 <br/>
 <br/>
 <br/>
@@ -2197,8 +2325,296 @@ name: dependency_graph
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; *.../example04*
+  &nbsp; &nbsp; &nbsp; *.../example09*
 ]
+
+---
+
+## Custom Settings
+
+You are not restricted to the settings predefined by sbt. Define your own.
+
+```scala
+val sampleStringSetting: SettingKey[String] = settingKey[String]("A sample string setting.")
+val sampleIntSetting: SettingKey[Int] = settingKey[Int]("A sample int setting.")
+
+ThisBuild / organization := "com.example"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
+ThisBuild / scalaVersion := "2.13.0"
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example9a",
+
+    sampleStringSetting := {
+      println(">>> Executing sampleStringSetting ...")
+      System.getProperty("java.home")
+    },
+
+    sampleIntSetting := {
+      println(">>> Executing sampleIntSetting ...")
+      val sum = 1 + 2
+      println("sum: " + sum)
+      sum
+    }
+  )
+```
+
+---
+
+<br/>
+```html
+example09aCustomSettings $ sbt
+...
+[success] Total time: 1 s, completed 08.07.2019 16:43:21
+[info] Loading settings for project root from build.sbt ...
+>>> Executing sampleStringSetting ...
+>>> Executing sampleIntSetting ...
+sum: 3
+[info] Set current project to Example9a (in build file:.../ex09aCustomSettings/)
+```
+```html
+sbt:Example9a> sampleStringSetting
+[info] /Library/Java/JavaVirtualMachines/jdk1.8.0_212.jdk/Contents/Home/jre
+```
+```html
+sbt:Example9a> sampleIntSetting
+[info] 3
+```
+
+---
+
+## Custom Tasks
+
+You are not restricted to the tasks predefined by sbt. Define your own tasks.
+
+```scala
+val sampleStringTask: TaskKey[String] = taskKey[String]("A sample string task.")
+val sampleIntTask: TaskKey[Int] = taskKey[Int]("A sample int task.")
+
+ThisBuild / organization := "com.example"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
+ThisBuild / scalaVersion := "2.12.8"
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example9b",
+
+    sampleStringTask := {
+      println(">>> Executing sampleStringTask ...")
+      System.getProperty("java.home")
+    },
+
+    sampleIntTask := {
+      println(">>> Executing sampleIntTask ...")
+      val sum = 1 + 2
+      println("sum: " + sum)
+      sum
+    },
+  )```
+
+---
+
+<br/>
+```html
+example09bCustomTasks $ sbt
+...
+[success] Total time: 2 s, completed 08.07.2019 17:14:19
+[info] Loading settings for project root from build.sbt ...
+[info] Set current project to Example9b (in build file:.../example09bCustomTasks/)
+```
+```html
+sbt:Example9b> sampleStringTask
+>>> Executing sampleStringTask ...
+[success] Total time: 0 s, completed 08.07.2019 17:14:41
+```
+```html
+sbt:Example9b> show sampleStringTask
+>>> Executing sampleStringTask ...
+[info] /Library/Java/JavaVirtualMachines/jdk1.8.0_212.jdk/Contents/Home/jre
+[success] Total time: 0 s, completed 08.07.2019 17:14:59
+```
+```html
+sbt:Example9b> sampleIntTask
+>>> Executing sampleIntTask ...
+sum: 3
+[success] Total time: 0 s, completed 08.07.2019 17:15:11
+```
+```html
+sbt:Example9b> show sampleIntTask
+>>> Executing sampleIntTask ...
+sum: 3
+[info] 3
+[success] Total time: 1 s, completed 08.07.2019 17:15:21
+```
+
+---
+
+## Execution semantics of tasks
+
+<br/>
+If you do **not** invoke **.value** on another task all lines of a task will be invoked sequentially,
+e.g. in the *sampleIntTask* from the previous example.
+
+```scala
+sampleIntTask := {
+  println(">>> Executing sampleIntTask ...")
+  val sum = 1 + 2
+  println("sum: " + sum)
+  sum
+}
+```
+
+--
+
+<br/>
+This is no longer true if you invoke **.value** on another task.
+
+- **.value** expresses a task dependency.
+- *x := y.value* &nbsp; means: &nbsp; Task x depends on task (or setting) y.
+- Different dependent task are executed **in parallel**.
+- Dependent tasks are **deduplicated**
+
+---
+
+class: middle
+
+## Rules
+
+<br/>
+- A task may depend on a task or a setting.
+- A setting may depend on another setting.
+- A setting never depends on a task.
+
+---
+
+```scala
+val startServer = taskKey[Unit]("start server")
+val stopServer = taskKey[Unit]("stop server")
+val sampleIntTask = taskKey[Int]("A sample int task.")
+val sampleStringTask = taskKey[String]("A sample string task.")
+
+...
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example9c",
+    startServer := {
+      println("starting...")
+      Thread.sleep(500)
+    },
+    stopServer := {
+      println("stopping...")
+      Thread.sleep(500)
+    },
+    sampleIntTask := {
+      startServer.value // This line is invoked BEFORE the other statements   
+      val sum = 1 + 2
+      println("sum: " + sum)
+      stopServer.value // !!! This line is invoked BEFORE the other statements   
+      sum
+    },
+    sampleStringTask := {
+      startServer.value // This line is invoked BEFORE the other statements   
+      val s = sampleIntTask.value.toString // This line is invoked BEFORE the other statements   
+      println("s: " + s)
+      s
+    }
+  )
+```
+
+---
+
+```html
+example09cExecutionSemanticsOfTasks $ sbt
+...
+[info] Set current project to Example9c (in build file:.../example09cExecutionSemanticsOfTasks/)
+```
+```html
+sbt:Example9c> sampleIntTask
+stopping...
+starting...
+sum: 3
+[success] Total time: 1 s, completed 08.07.2019 17:59:27
+```
+```html
+sbt:Example9c> sampleStringTask
+stopping...
+starting...
+sum: 3
+s: 3
+[success] Total time: 1 s, completed 08.07.2019 17:59:36
+```
+
+--
+
+- *startServer* and *stopServer* are invoked before any other statement of *sampleIntTask*,
+because *sampleIntTask* depends on those other tasks.
+
+- *startServer* and *stopServer* are executed in parallel as these tasks do not depend on each other.
+Hence you might se the output of *startServer* before the output *stopServer* or vice versa.
+
+- *sampleStringTask* depends two time on *startServer* (once directly and once via *simpleIntTask*).
+But *startServer* is executed only once. sbt deduplicates task execution.
+
+---
+
+## Visualize dependencies with *inspect*
+
+```html
+sbt:Example9c> inspect sampleIntTask
+[info] Task: Int
+...
+[info] Dependencies:
+[info] 	stopServer
+[info] 	startServer
+...
+```
+
+```html
+sbt:Example9c> inspect sampleStringTask
+[info] Task: java.lang.String
+...
+[info] Dependencies:
+[info] 	sampleIntTask
+[info] 	startServer
+...
+```
+
+```html
+sbt:Example9c> inspect tree sampleStringTask
+[info] sampleStringTask = Task[java.lang.String]
+[info]   +-sampleIntTask = Task[Int]
+[info]   | +-startServer = Task[Unit]
+[info]   | +-stopServer = Task[Unit]
+[info]   | 
+[info]   +-startServer = Task[Unit]
+```
+
+---
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+For more details see:
+
+https://www.scala-sbt.org/release/docs/Custom-Settings.html
+
+--
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+All the tasks of a build form a **task graph** that doesn't allow cycles -
+a directed acyclic graph (DAG) of tasks where the edges denote a **happens-before** relationship .
+
+More examples explain this in:
+
+https://www.scala-sbt.org/release/docs/Task-Graph.html
 
 ---
 
@@ -2219,10 +2635,31 @@ name: scopes
 
 ---
 
-class: middle, center
-name: references
+## TODO Scopes
 
-# 17. References
+---
+
+class: middle, center
+name: ammonite_repl
+
+# 17. Ammonite REPL
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+---
+
+## TODO Ammonite REPL
+
+---
+
+class: middle, center
+name: references ammonite_repl
+
+# 18. References
 <br/>
 <br/>
 <br/>
