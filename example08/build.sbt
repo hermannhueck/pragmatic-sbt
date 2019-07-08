@@ -11,7 +11,7 @@ inThisBuild(
     version            := "0.1.0",
     organization       := "com.example",
     organizationName   := "example",
-    maintainer         := "functional.hacker@example.com"
+    maintainer         := "functional.hacker@example.com",
   )
 )  
 
