@@ -6,4 +6,6 @@ target/
 .metals/
 
 .dotty-ide-disabled
+.history
+
 .DS_Store

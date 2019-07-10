@@ -1,4 +1,6 @@
 import Dependencies._
+import scala.language.postfixOps
+import scala.sys.process._
 
 val scala212 = "2.12.8"
 val scala213 = "2.13.0"
@@ -45,7 +47,6 @@ lazy val lib = (project in file("lib"))
    // JavaAppPackaging not enabled for the library
   .settings(
     name := "WeatherLib",
-    maintainer := (ThisBuild / maintainer).value,
     crossScalaVersions := supportedScalaVersions,
     libraryDependencies ++= Seq(okHttp, playJson, scalaTest % Test),
   )

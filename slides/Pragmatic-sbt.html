@@ -198,7 +198,9 @@ https://github.com/hermannhueck/pragmatic-sbt
 This presentation gives a pragmatic introduction to SBT - the Scala Build Tool -
 in 7 examples. Each example is a build in it's own root directory: ./example??
 Beginning with very simple sbt examples the later examples are becoming more
-structured and more complex showing multi-project builds and cross version builds.
+structured and more complex showing multi-project builds, cross version builds,
+packaging and publishing, custom settings and tasks and the integration of the
+Ammonite REPL into your build.
 
 Recommended tutorial to start with sbt:
 
@@ -206,7 +208,7 @@ Recommended tutorial to start with sbt:
 
 ---
 
-# Agenda
+## Agenda
 <br/>
 
 1. [sbt without build file](#sbt_without_buildfile)
@@ -224,7 +226,7 @@ Recommended tutorial to start with sbt:
 1. [Installable Packages with *sbt-native-packager*](#installable_packages)
 1. [Predefined Settings and Tasks](#predefined_settings_tasks)
 1. [Custom Settings and Tasks](#custom_settings_tasks)
-1. [Scopes](#scopes)
+1. [Global Settings](#global_settings)
 1. [Ammonite REPL](#ammonite_repl)
 1. [References](#references)
 
@@ -254,7 +256,7 @@ sbt uses the same kind of directory structure like Maven and Gradle.
 
 We have a Scala/Java source structure in your root directory but no *build.sbt*.
 
-```sh
+```html
 example01 $ tree
 .
 └── src
@@ -277,11 +279,9 @@ Hence you can use sbt with an empty *build.sbt* or even without *build.sbt* ...
 
 ---
 
-## No build file
+## No build file (check versions)
 
-Start sbt and compile, run, test your code:
-
-```sh
+```html
 example01 $ sbt
 [warn] No sbt.version set ...
 [info] Loading settings ...
@@ -289,19 +289,46 @@ example01 $ sbt
 [info] sbt server started at ...
 ```
 --
-```sh
+```html
+sbt:example01> sbtVersion
+[info] 1.2.8
+```
+--
+```html
 sbt:example01> scalaVersion
 [info] 2.12.7
 ```
 --
-```sh
+```html
+sbt:example01> name
+[info] example01
+```
+--
+```html
+sbt:example01> projects
+[info] In file:/Users/hermann/dev/projects/github/pragmatic-sbt/example01/
+[info] 	 * example01
+```
+--
+```html
+sbt:example01> version
+[info] 0.1.0-SNAPSHOT
+```
+
+---
+
+## No build file
+
+Compile, run, test
+
+```html
 sbt:example01> compile
 [info] Compiling 1 Scala source to .../example01/target/scala-2.12/classes ...
 [info] Done compiling.
 [success] Total time: 2 s, completed 01.07.2019 19:54:58
 ```
 --
-```sh
+```html
 sbt:example01> run
 [info] Packaging .../example01/target/scala-2.12/example01_2.12-0.1.0-SNAPSHOT.jar ...
 [info] Done packaging.
@@ -311,21 +338,23 @@ Hello World!
 
 [success] Total time: 0 s, completed 01.07.2019 19:55:07
 ```
-
----
-
-## No build file
-
-Add scalatest to libraryDependencies and test.
-
-```sh
+--
+```html
 sbt:example01> test:compile
 [info] Compiling 1 Scala source to .../example01/target/scala-2.12/test-classes ...
 [error] .../example01/src/test/scala/example/HelloSpec.scala:3:12: object scalatest is not a member of package org
 [error] import org.scalatest._
 [error]            ^
 ```
---
+
+Test code doesn't compile. The test library is missing.
+
+---
+
+## No build file
+
+Add *scalatest* to libraryDependencies and test again.
+
 ```sh
 sbt:example01> set libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 [info] Defining libraryDependencies
@@ -820,12 +849,6 @@ In file:.../example03/
 - User specific plugins (valid in all projects of this user) are installed in<br/>
 **~/.sbt/1.0/plugins/plugins.sbt**.
 
-<br/>
-<br/>
-<br/>
-More details:<br/>
-https://www.scala-sbt.org/1.x/docs/Community-Plugins.html
-
 ---
 
 ## Plugin: *sbt-updates*
@@ -997,7 +1020,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.24")
 enablePlugin(JavaAppPackaging)
 ```
 
-This plugin must explicitly be enabled in *build.sbt*.
+Unlike many other plugins this one must be enabled explicitly in *build.sbt*.
 
 ---
 
@@ -1030,6 +1053,28 @@ In file:.../example03/
 
 This list is without *sbt-native-packager*.<br/>
 This plugin bundle adds a lot more plugins, one for each package format.
+
+---
+
+## Some other useful plugins
+
+### sbt-assembly
+- create fat JARs
+- https://github.com/sbt/sbt-assembly
+
+### sbt-scalariform
+- code formatting using Scalariform
+- https://github.com/sbt/sbt-scalariform
+
+### new-sbt-scalafmt
+- code formatting using Scalafmt
+- https://github.com/lucidsoftware/neo-sbt-scalafmt
+
+--
+
+<br/>
+More plugins:<br/>
+https://www.scala-sbt.org/1.x/docs/Community-Plugins.html
 
 ---
 
@@ -1994,6 +2039,19 @@ The weather in Berlin is:   light rain
 example08 $
 ```
 
+--
+
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+The following packaging commands require a **maintainer** setting in the build.<br/>
+Otherwise sbt would issue a warning: &nbsp; "The maintainer is empty"
+
+```scala
+```
+
 ---
 
 ## Zip distribution
@@ -2619,9 +2677,9 @@ https://www.scala-sbt.org/release/docs/Task-Graph.html
 ---
 
 class: middle, center
-name: scopes
+name: global_settings
 
-# 16. Scopes
+# 16. Global Settings
 <br/>
 <br/>
 <br/>
@@ -2630,12 +2688,61 @@ name: scopes
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; *.../example04*
+  &nbsp; &nbsp; &nbsp; https://www.scala-sbt.org/release/docs/Global-Settings.html
 ]
 
 ---
 
-## TODO Scopes
+<br/>
+### build.sbt (or any other file suffixed with *.sbt*)
+
+- Local settings go into **./build.sbt** in the project#s base directory.
+- Global settings used in all projects are located in **~/.sbt/1.0/global.sbt**.
+
+--
+
+<br/>
+### Plugins
+
+- Local plugins are defined in **./project/plugins.sbt**.
+- Global plugins are defined in **~/.sbt/1.0/plugins/plugins.sbt**.
+
+--
+
+<br/>
+### Startup commands (like alias definitions)
+
+- Local startup commands go into **.sbtrc** in the project's base directory.
+- Global startup commands go into **~/.sbtrc**.
+
+---
+
+## Unifying sbt history
+
+<br/>
+- With the **!:** command you can display sbt's command history.
+- Every subproject (*root*, *app*, *lib*) has it's own history<br/>
+ (saved in it's own history file).
+
+--
+
+<br/>
+- To unify the history of all files let **historyPath** point to the same file.
+- To have this feature available in all projects we do this globally in ...
+
+--
+
+<br/>
+### ~/.sbt/1.0/global.sbt
+
+```scala
+historyPath := Some( (ThisBuild / baseDirectory).value / ".history" )
+cleanKeepFiles -= (ThisBuild / baseDirectory).value / ".history"
+```
+
+--
+
+Put *.history* into the **.gitignore** file in order to exclude it from version control.
 
 ---
 
@@ -2652,7 +2759,41 @@ name: ammonite_repl
 
 ---
 
-## TODO Ammonite REPL
+Ammonite is a very powerful Scala REPL.
+
+With the following settings we make it available from the sbt prompt
+(like the Scala console) in all our projects.
+
+### ~/.sbt/1.0/global.sbt
+
+```scala
+libraryDependencies += "com.lihaoyi" % "ammonite" % "1.6.9" % "test" cross CrossVersion.full
+
+Test / sourceGenerators += Def.task {
+  val file = (Test / sourceManaged).value / "amm.scala"
+  IO.write(file, """object amm extends App { ammonite.Main.main(args) }""")
+  Seq(file)
+}.taskValue
+
+addCommandAlias("amm", "Test/runMain amm")
+```
+
+```html
+sbt:Example08> amm
+[info] Running amm 
+Loading...
+Compiling (synthetic)/ammonite/predef/interpBridge.sc
+Compiling (synthetic)/ammonite/predef/replBridge.sc
+Compiling (synthetic)/ammonite/predef/sourceBridge.sc
+Compiling (synthetic)/ammonite/predef/frontEndBridge.sc
+Compiling (synthetic)/ammonite/predef/DefaultPredef.sc
+Welcome to the Ammonite Repl 1.6.9
+(Scala 2.13.0 Java 1.8.0_212)
+If you like Ammonite, please support our development at www.patreon.com/lihaoyi
+@ val x = 2 + 3 
+x: Int = 5
+
+```
 
 ---
 
