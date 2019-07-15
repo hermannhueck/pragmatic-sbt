@@ -3,7 +3,10 @@
 This presentation gives a pragmatic introduction to SBT - the Scala Build Tool -
 in 7 examples. Each example is a build in it's own root directory: ./example??
 Beginning with very simple sbt examples the later examples are becoming more
-structured and more complex showing multi project builds and cross version builds.
+structured and more complex showing multi-project builds, cross version builds,
+packaging and publishing, custom *Setting*s and *Task*s and the integration of the
+Ammonite REPL into your build. We also look at *InputTask*s, *Command*s and
+plugin development.
 
 ## References
 
@@ -22,6 +25,7 @@ structured and more complex showing multi project builds and cross version build
 
 - sbt core concepts<br/>
   Talk by Eugene Yokota at Scala Days Lausanne 2019<br/>
+  https://www.youtube.com/watch?v=-shamsTC7rQ<br/>
   https://portal.klewel.com/watch/webcast/scala-days-2019/talk/15/
 - sbt-native-packager - package all the things<br/>
   Talk by Nepomuk Seiler at Scala Days Berlin 2018<br/>
