@@ -199,14 +199,15 @@ https://github.com/hermannhueck/pragmatic-sbt
 # Abstract
 <br/>
 
-This presentation gives a pragmatic introduction to SBT - the Scala Build Tool -
-in 7 examples. Each example is a build in it's own root directory: ./example??
+This presentation gives a pragmatic introduction to sbt in several examples.
+Each example is a build in it's own root directory: ./example???.
 Beginning with very simple sbt examples the later examples are becoming more
 structured and more complex showing multi-project builds, cross version builds,
-packaging and publishing, custom settings and tasks and the integration of the
-Ammonite REPL into your build.
+packaging and publishing, custom *Setting*s and *Task*s and the integration of the
+Ammonite REPL into your build. We also look at *InputTask*s, *Command*s and
+plugin development.
 
-Recommended tutorial to start with sbt:
+Recommended bootstrap tutorial for sbt:
 
 - https://www.scala-sbt.org/1.x/docs/sbt-by-example.html
 
@@ -222,7 +223,7 @@ Recommended tutorial to start with sbt:
 1. [Plugins](#plugins)
 1. [Multi-project Builds](#multi_project_builds)
 1. [Cross Builds](#cross_builds)
-1. [Source code for different Scala versions](#source_code_for_different_scala_versions)
+1. [Version specific source code](#version_specific_source_code)
 1. [Library Dependencies](#library_dependencies)
 1. [Packaging](#packaging)
 1. [Publishing](#publishing)
@@ -299,23 +300,23 @@ example01 $ sbt
 sbt:example01> sbtVersion
 [info] 1.2.8
 ```
---
+
 ```html
 sbt:example01> scalaVersion
 [info] 2.12.7
 ```
---
+
 ```html
 sbt:example01> name
 [info] example01
 ```
---
+
 ```html
 sbt:example01> projects
 [info] In file:.../example01/
 [info] 	 * example01
 ```
---
+
 ```html
 sbt:example01> version
 [info] 0.1.0-SNAPSHOT
@@ -325,15 +326,17 @@ sbt:example01> version
 
 ## No build file
 
-Compile, run, test
+Compile, run, test ...
+
+--
 
 ```html
 sbt:example01> compile
 [info] Compiling 1 Scala source to .../example01/target/scala-2.12/classes ...
 [info] Done compiling.
-[success] Total time: 2 s, completed 01.07.2019 19:54:58
+[success] Total time: ...
 ```
---
+
 ```html
 sbt:example01> run
 [info] Packaging .../example01/target/scala-2.12/example01_2.12-0.1.0-SNAPSHOT.jar ...
@@ -342,9 +345,8 @@ sbt:example01> run
 
 Hello World!
 
-[success] Total time: 0 s, completed 01.07.2019 19:55:07
 ```
---
+
 ```html
 sbt:example01> test:compile
 [info] Compiling 1 Scala source to .../example01/target/scala-2.12/test-classes ...
@@ -359,23 +361,25 @@ Test code doesn't compile. The test library is missing.
 
 ## No build file
 
-Add *scalatest* to libraryDependencies and test again.
+Add *scalatest* to *libraryDependencies* and test again.
 
-```sh
+--
+
+```html
 sbt:example01> set libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 [info] Defining libraryDependencies
 [info] The new value will be used by allDependencies, dependencyPositions, dependencyUpdatesData
 [info] Reapplying settings...
 [info] Set current project to example01 (in build file:.../example01/)
 ```
---
-```sh
+
+```html
 sbt:example01> test:compile
 [info] Compiling 1 Scala source to .../example01/target/scala-2.12/test-classes ...
 [info] Done compiling.
 ```
---
-```sh
+
+```html
 sbt:example01> test
 [info] HelloSpec:
 [info] The HelloApp object
@@ -385,7 +389,7 @@ sbt:example01> test
 [info] Suites: completed 1, aborted 0
 [info] Tests: succeeded 1, failed 0, canceled 0, ignored 0, pending 0
 [info] All tests passed.
-[success] Total time: 3 s, completed 01.07.2019 19:58:08
+[success] Total time: ...
 ```
 
 ---
@@ -394,23 +398,25 @@ sbt:example01> test
 
 The '*save session*' command writes manually set settings to a minimal *build.sbt*.
 
-```sh
+--
+
+```html
 sbt:example01> session save
 [info] Reapplying settings...
 [info] Set current project to example01 (in build file:.../example01/)
 ```
---
-```sh
+
+```html
 sbt:example01> exit
 [info] shutting down server
 ```
---
-```sh
+
+```html
 example01 $ cat build.sbt 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % Test
 ```
---
-```sh
+
+```html
 example01 $ cat project/build.properties 
 sbt.version=1.2.8
 ```
@@ -459,7 +465,7 @@ https://github.com/foundweekends/giter8/wiki/giter8-templates
 
 ---
 
-```sh
+```html
 pragmatic-sbt $ sbt new scala/scala-seed.g8
 [info] Set current project to ...
 
@@ -470,7 +476,7 @@ name [Scala Seed Project]: example02
 Template applied in .../example02
 ```
 --
-```sh
+```html
 pragmatic-sbt $ cd example02
 example02 $ tree
 .
@@ -493,17 +499,15 @@ example02 $ tree
 
 ---
 
-### Generated files:
+## Generated files
 
-**project/build.properties**
 ```scala
+// project/build.properties
 sbt.version=1.2.8
 ```
 
---
-
-**project/Dependencies.scala**
 ```scala
+// project/Dependencies.scala
 import sbt._
 
 object Dependencies {
@@ -511,10 +515,8 @@ object Dependencies {
 }
 ```
 
---
-
-**build.sbt**
 ```scala
+// build.sbt
 import Dependencies._
 
 ThisBuild / scalaVersion     := "2.13.0"
@@ -566,7 +568,7 @@ as HTTP client and play-json to parse the JSON response.
 
 --
 
-```sh
+```html
 example03 $ tree
 .
 ├── build.sbt
@@ -600,8 +602,6 @@ object Dependencies {
 }
 ```
 
---
-
 ### build.sbt
 
 ```scala
@@ -622,7 +622,6 @@ lazy val root = (project in file("."))
 ---
 
 ### src/main/scala/weather/WeatherLib.scala
-(tested by: **src/test/scala/weather/WeatherSpec.scala**)
 
 ```scala
 object WeatherLib {
@@ -633,8 +632,7 @@ object WeatherLib {
   }
 }
 ```
-
---
+(tested by: *src/test/scala/weather/WeatherSpec.scala*)
 
 ### src/main/scala/weather/WeatherApp.scala
 
@@ -693,7 +691,7 @@ ThisBuild / initialCommands :=
 
 --
 
-```sh
+```html
 sbt:Example03> console
 [info] Starting scala interpreter...
 Welcome to Scala 2.12.8 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_212).
@@ -730,17 +728,14 @@ name: aliases
 
 ---
 
-<br/>
-<br/>
-Project specific aliases are defined in ...
-### *[project_root].sbtrc*
-
---
+## .sbtrc
 
 <br/>
-<br/>
-User specific aliases (valid in all projects of this user) are defined in ...
-### *~/.sbtrc*
+- Project specific aliases are defined in<br/>
+  **[project_baseDirectory]/.sbtrc**.
+
+- User specific aliases (valid in all projects of this user) are defined in<br/>
+  **~/.sbtrc**.
 
 --
 
@@ -756,7 +751,7 @@ alias dl = dependencyList
 ---
 
 <br/>
-```sbt
+```html
 sbt:Example03> a
 	a = alias
 	r = reload
@@ -764,26 +759,20 @@ sbt:Example03> a
 	dl = dependencyList
 ```
 
---
-
-```sbt
+```html
 sbt:Example03> r
 [info] Loading ...
 [info] Set current project to Example03 (in build file:.../example03/)
 ```
 
---
-
-```sh
+```html
 sbt:Example03> c
 [info] Compiling 2 Scala sources to .../example03/target/scala-2.12/classes ...
 [info] Done compiling.
-[success] Total time: 5 s, completed 02.07.2019 16:47:34
+[success] Total time: ...
 ```
 
---
-
-```sh
+```html
 sbt:Example03> dl
 [info] Updating ProjectRef(uri("file:.../example03/"), "root")...
 [info] Done updating.
@@ -811,6 +800,9 @@ name:  plugins
 
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example03*
+]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Using-Plugins.html*
 ]
 
 ---
@@ -873,16 +865,12 @@ Source code: https://github.com/rtimush/sbt-updates
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.4.1")
 ```
 
---
-
-<br/>
-```sh
+```html
 sbt:Example03> dependencyUpdates
 [info] Found 3 dependency updates for example03
 [info]   com.typesafe.play:play-json  : 2.7.3  -> 2.7.4          
 [info]   org.scala-lang:scala-library : 2.12.8          -> 2.13.0
 [info]   org.scalatest:scalatest:test : 3.0.5  -> 3.0.8          
-[success] Total time: 0 s, completed 02.07.2019 13:17:11
 ```
 
 ---
@@ -900,9 +888,7 @@ Source code: https://github.com/jrudolph/sbt-dependency-graph
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
 ```
 
---
-
-```sh
+```html
 sbt:Example03> dependencyTree
 [info] com.example:example03_2.12:0.1.0 [S]
 [info]   +-com.eed3si9n:gigahorse-okhttp_2.12:0.5.0 [S]
@@ -923,7 +909,6 @@ sbt:Example03> dependencyTree
 ---
 
 ## Plugin: *sbt-sh*
-<br/>
 
 enables shell commands from the sbt prompt.
 
@@ -936,10 +921,7 @@ Source code: https://github.com/melezov/sbt-sh
 addSbtPlugin("com.oradian.sbt" % "sbt-sh" % "0.3.0")
 ```
 
---
-
-<br/>
-```sh
+```html
 sbt:Example03> sh ls -l
 total 8
 -rw-r--r--  1 hermann  staff  367  1 Jul 15:55 build.sbt
@@ -965,7 +947,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 
 --
 
-```sh
+```html
 sbt:Example03> git status
 [info] Auf Branch master
 [info] Ihr Branch ist auf demselben Stand wie 'origin/master'.
@@ -984,7 +966,6 @@ sbt:Example03> git status
 ---
 
 ## Plugin: *sbt-coursier*
-<br/>
 
 alternative for the ivy dependency manager built into sbt.<br/>
 Fetches dependency jars in parallel.
@@ -1055,8 +1036,6 @@ In file:.../example03/
 	net.virtualvoid.sbt.graph.DependencyGraphPlugin: enabled in root
 ```
 
---
-
 This list is without *sbt-native-packager*.<br/>
 This plugin bundle adds a lot more plugins, one for each package format.
 
@@ -1079,7 +1058,7 @@ This plugin bundle adds a lot more plugins, one for each package format.
 --
 
 <br/>
-More plugins:<br/>
+Many more plugins:<br/>
 https://www.scala-sbt.org/1.x/docs/Community-Plugins.html
 
 ---
@@ -1097,6 +1076,9 @@ name: multi_project_builds
 
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example04*
+]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Multi-Project.html*
 ]
 
 ---
@@ -1116,24 +1098,18 @@ project which controls the other two.
 --
 
 <br/>
-Subprojects are (if not specified otherwise) completely independent of each other.
-I.e: Tasks can be executed in parallel.
+Subprojects are (if not specified otherwise) completely independent of each other,
+i.e: tasks can be executed in parallel.
 
 <br/>
-The subprojects have completed unrelated settings. If a setting is undefined in a subproject,
+The subprojects have completely unrelated settings. If a setting is undefined in a subproject,
 the default setting from *ThisBuild* is used.
-
---
-
-<br/>
-More details:<br/>
-https://www.scala-sbt.org/1.x/docs/Multi-Project.html
 
 ---
 
 ### Directory tree
 
-```sh
+```html
 example04 $ tree
 .
 ├── app
@@ -1162,7 +1138,7 @@ example04 $ tree
 
 class: middle
 
-### build.sbt
+### build.sbt (with three subprojects: root, app, lib)
 
 ```scala
 import Dependencies._
@@ -1219,44 +1195,42 @@ lazy val lib = (project in file("lib"))
 
 ---
 
-```sh
+```html
 sbt:Example04> projects
 [info] In file:.../example04/
 [info] 	   app
 [info] 	   lib
 [info] 	 * root
 ```
---
-```sh
+
+```html
 sbt:Example04> project lib
 [info] Set current project to WeatherLib (in build file:.../example04/)
 ```
---
-```sh
+
+```html
 sbt:WeatherLib> projects
 [info] In file:.../example04/
 [info] 	   app
 [info] 	 * lib
 [info] 	   root
 ```
---
+
 ```html
 sbt:WeatherLib> compile
 [info] Compiling 1 Scala source to .../example04/lib/target/scala-2.12/classes ...
 [info] Done compiling.
-[success] Total time: 4 s, completed 02.07.2019 23:58:48
 ```
---
-```sh
+
+```html
 sbt:WeatherLib> project root
 [info] Set current project to Example04 (in build file:.../example04/)
 ```
---
+
 ```html
 sbt:Example04> compile
 [info] Compiling 1 Scala source to .../example04/app/target/scala-2.12/classes ...
 [info] Done compiling.
-[success] Total time: 2 s, completed 02.07.2019 23:59:23
 ```
 
 ---
@@ -1275,11 +1249,16 @@ name: cross_builds
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example05*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Cross-Build.html*
+]
 
 ---
 
 <br/>
-## Cross-built libraries
+<br/>
+<br/>
+## Using cross-built libraries
 
 <br/>
 We already used cross-built libraries when specifying the *libraryDependencies*
@@ -1287,13 +1266,24 @@ with **%%** between group id and artefact id.
 
 --
 
-<br/>
 ```scala
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.4"
 ```
 
 This automatically appends the current *scalaVersion* to the artefact id.<br/>
 E.g.: &nbsp; *play-json* becomes *play-json_2.13*.
+
+---
+
+<br/>
+<br/>
+<br/>
+## Creating cross-built libraries
+
+<br/>
+The following *example05* shows how to create cross-built libraries.
+
+Cross-building is controlled by the setting **crossScalaVersions**.
 
 ---
 
@@ -1313,7 +1303,7 @@ lazy val root = (project in file("."))
   .aggregate(app, lib)
   .settings(
     name := "Example05",
-    publish / skip := true,
+    publish / skip := true, // nothing to publish
     crossScalaVersions := Nil, // set to Nil on the aggregating project
   )
 
@@ -1321,7 +1311,7 @@ lazy val app = (project in file("app"))
   .dependsOn(lib)
   .settings(
     name := "WeatherApp",
-    publish / skip := true,
+    publish / skip := true, // only libraries must be published
     crossScalaVersions := supportedScalaVersions,
     initialCommands := """ ... // imports """.stripMargin,
   )
@@ -1337,33 +1327,29 @@ lazy val lib = (project in file("lib"))
 ---
 
 ## crossScalaVersions
-<br/>
-
---
 
 - *crossScalaVersions* is the setting to achive cross-building our source code to different binary Scala versions.
 
 - It's value is a Seq of Strings, each containg a valid Scala version like "2.12.8" or "2.13.0".
 
---
-
 - Skip cross-building in the overarching "root" project which has no source code.
-  (Set *crossScalaVersions* to Nil and *publish/skip* to *true*.)
+  (Set *crossScalaVersions* to Nil.)
 
 --
+
+## + and ++ commands
 
 - The Scala version can be selected at the sbt prompt with the ++ command, e.g. *++2.12.8*
 
 - If the ++ command is followed by a ! you can also switch to a Scala version
   not listed in *build.sbt*, e.g. *++2.11.12!*
 
---
-
 - To build against all versions listed in crossScalaVersions,
   prefix the action to run with +, e.g. *+compile* or *+test*.
 
 ---
 
+<br/>
 ```html
 sbt:Example05> scalaVersion
 [info] app / scalaVersion
@@ -1374,18 +1360,14 @@ sbt:Example05> scalaVersion
 [info] 	2.13.0
 ```
 
---
-
 ```html
 sbt:Example05> compile
 [info] Compiling 1 Scala source to .../example05/lib/target/scala-2.13/classes ...
 [info] Done compiling.
 [info] Compiling 1 Scala source to .../example05/app/target/scala-2.13/classes ...
 [info] Done compiling.
-[success] Total time: 5 s, completed 04.07.2019 12:39:09
+[success] Total time: ...
 ```
-
---
 
 ```html
 sbt:Example05> ++2.12.8 -v
@@ -1401,6 +1383,7 @@ sbt:Example05> ++2.12.8 -v
 
 ---
 
+<br/>
 ```html
 sbt:Example05> compile
 [info] Compiling 1 Scala source to .../example05/lib/target/scala-2.12/classes ...
@@ -1409,14 +1392,9 @@ sbt:Example05> compile
 [info] Done compiling.
 ```
 
---
-
 ```html
 sbt:Example05> clean
-[success] Total time: 1 s, completed 04.07.2019 12:48:27
 ```
-
---
 
 ```html
 sbt:Example05> +compile
@@ -1428,7 +1406,7 @@ sbt:Example05> +compile
 [info] Done compiling.
 [info] Compiling 1 Scala source to .../example05/app/target/scala-2.13/classes ...
 [info] Done compiling.
-[success] Total time: 4 s, completed 04.07.2019 12:48:37
+...
 [info] Setting Scala version to 2.12.8 on 2 projects.
 [info] Excluded 1 projects, run ++ 2.12.8 -v for more details.
 [info] Reapplying settings...
@@ -1437,9 +1415,7 @@ sbt:Example05> +compile
 [info] Done compiling.
 [info] Compiling 1 Scala source to .../example05/app/target/scala-2.12/classes ...
 [info] Done compiling.
-[success] Total time: 5 s, completed 04.07.2019 12:48:43
-[info] Reapplying settings...
-[info] Set current project to Example05 (in build file:.../example05/)
+...
 ```
 
 ---
@@ -1449,8 +1425,6 @@ sbt:Example05> project lib
 [info] Set current project to WeatherLib (in build file:.../example05/)
 ```
 
---
-
 ```html
 sbt:WeatherLib> ++2.11.12! compile
 [info] Forcing Scala version to 2.11.12 on all projects.
@@ -1458,14 +1432,14 @@ sbt:WeatherLib> ++2.11.12! compile
 [info] Set current project to WeatherLib (in build file:.../example05/)
 [info] Compiling 1 Scala source to .../example05/lib/target/scala-2.11/classes ...
 [info] Done compiling.
-[success] Total time: 2 s, completed 04.07.2019 13:15:44
+[success] Total time: ...
 ```
 
 --
 
 The class files are compiled to version specific subdirectories of the *target* directories.
 
-```sh
+```html
 example05 $ tree lib/target/scala-*
 lib/target/scala-2.11
 └── classes
@@ -1483,22 +1457,10 @@ lib/target/scala-2.13
 
 ---
 
-<br/>
-<br/>
-<br/>
-<br/>
-### More info on cross-building:
-
-<br/>
-<br/>
-https://www.scala-sbt.org/1.x/docs/Cross-Build.html
-
----
-
 class: middle, center
-name: source_code_for_different_scala_versions
+name: version_specific_source_code
 
-# 9. Source code for different Scala versions
+# 9. Version specific source code
 <br/>
 <br/>
 <br/>
@@ -1524,7 +1486,7 @@ versions specific source directories, e.g.:
 
 --
 
-```sh
+```html
 example06 $ tree app/src
 app/src
 └── main
@@ -1555,8 +1517,6 @@ class WeatherBase {
 }
 ```
 
---
-
 <br/>
 *src/main/scala-2.12/app/WeatherApp.scala*
 ```scala
@@ -1564,8 +1524,6 @@ object WeatherApp extends WeatherBase with App {
   println(showWeatherOf("Berlin"))
 }
 ```
-
---
 
 <br/>
 *src/main/scala-2.13/app/WeatherApp.scala*
@@ -1592,11 +1550,15 @@ name: library_dependencies
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example07*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Library-Dependencies.html*
+]
 
 ---
 
-class: middle
-
+<br>
+<br>
+<br>
 ## Unmanaged dependencies
 <br>
 
@@ -1609,33 +1571,28 @@ This way of adding library dependencies is very uncommon, but may be useful in s
 
 ## Managed dependencies
 
+<br/>
 This is the usual way to define dependencies. We used it already in the first example.
 
 You have to specify the setting **libraryDependencies** which takes a *Seq[ModuleId]*.
 Each *ModuleId* consists of a groupId, artefactId and revision joined with the %-operator
 and optionally followed by a configuration such as *"test"* or *Test* (the type-safe way).
 
-When using %% between groupId and artefactId sbt automatically detects the right binary
+When using the %%-operator between groupId and artefactId sbt automatically detects the right binary
 Scala version of the library from the current setting of ***scalaVersion***.
 
 --
 
+<br/>
 ```scala
 // gigahorse-okhttp for binary Scala version 2.12.x
 libraryDependencies += "com.eed3si9n" % "gigahorse-okhttp_2.12" % "0.5.0"
 ```
 
---
-
 ```scala
 // gigahorse-okhttp using the current scalaVersion setting
 libraryDependencies += "com.eed3si9n" %% "gigahorse-okhttp" % "0.5.0"
 ```
-
---
-
-<br/>
-See also: https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html
 
 ---
 
@@ -1674,7 +1631,7 @@ See also: https://ant.apache.org/ivy/history/2.3.0/ivyfile/dependency.html#revis
 
 ## Resolvers
 
-Resolvers is a Seq of locations looked up by sbt when resolving library dependencies.
+Resolvers is a Seq of local or remote locations looked up by sbt when resolving library dependencies.
 
 --
 
@@ -1682,9 +1639,10 @@ Resolvers is a Seq of locations looked up by sbt when resolving library dependen
 
 Some resolvers are predefined by default. (Hence we don't need to define resolvers in many cases.)
 - the Maven2 repository at *https://repo1.maven.org/maven2/*
-- the local sbt cache at *~/.sbt/preloaded*
-- jars published locally to Ivy at *~/.ivy/local
-- the project resolver which resolves inter-project dependencies
+- the local sbt cache at **~/.sbt/preloaded**
+- jars published locally to Ivy at **~/.ivy/local**
+- the project resolver which resolves inter-project dependencies,
+  e.g. the dependency between the *app* and *lib* subprojects
 
 The default resolvers can be listed in a quite weird format with<br/>
 **show externalResolvers**
@@ -1695,10 +1653,11 @@ To change or remove the default resolvers, you would need to override **external
 
 ## User-defined Resolvers
 
-To add your own resolvers to the default ones, use the setting **resolvers**.<br/>
+To add your own resolvers to the default ones, use the setting **resolvers**.
+
 To add an additional repository, use
 
-```sbt
+```html
 resolvers += "name" at "location"
 ```
 
@@ -1706,11 +1665,11 @@ resolvers += "name" at "location"
 
 ### Examples
 
-```sbt
+```html
 resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
 ```
 
-```sbt
+```html
 resolvers += "Sonatype OSS Public" at "https://oss.sonatype.org/content/repositories/public"
 ```
 
@@ -1719,7 +1678,7 @@ resolvers += "Sonatype OSS Public" at "https://oss.sonatype.org/content/reposito
 resolvers += Resolver.sonatypeRepo("public")
 ```
 
-```sbt
+```html
 resolvers += "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases"
 ```
 
@@ -1727,15 +1686,6 @@ resolvers += "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases
 // using a predefined shortcut for the "Typesafe releases" repo
 resolvers += Resolver.typesafeRepo("releases")
 ```
-
----
-
-class: middle
-
-### More details on resolvers
-
-<br/>
-https://www.scala-sbt.org/1.x/docs/Resolvers.html
 
 ---
 
@@ -1756,8 +1706,8 @@ name: packaging
 
 ---
 
-class: middle
-
+<br/>
+<br/>
 ## Commands for package generation
 <br/>
 
@@ -1771,30 +1721,29 @@ sbt comes with some commands for the generation of packages (jar files).
 These commands generate jar files under<br/>
 **[subproject_root]/target/scala-[scalaVersion]**
 
-In a cross build project all commands can be prefixed with + in order to package jars
+In a cross build project all commands can be prefixed with **+** in order to package jars
 for all supported scala versions of the build.
 
 ---
 
+<br/>
 ```html
 sbt:Example07> project lib
 [info] Set current project to WeatherLib (in build file:.../example07/)
 ```
---
+
 ```html
 sbt:WeatherLib> packageBin
 [info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0.jar ...
 [info] Done packaging.
-[success] Total time: 1 s, completed 05.07.2019 18:01:09
 ```
---
+
 ```html
 sbt:WeatherLib> packageSrc
 [info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0-sources.jar ...
 [info] Done packaging.
-[success] Total time: 0 s, completed 05.07.2019 18:01:16
 ```
---
+
 ```html
 sbt:WeatherLib> packageDoc
 [info] Main Scala API documentation to .../example07/lib/target/scala-2.13/api...
@@ -1802,10 +1751,9 @@ model contains 3 documentable templates
 [info] Main Scala API documentation successful.
 [info] Packaging .../example07/lib/target/scala-2.13/weatherlib_2.13-0.1.0-javadoc.jar ...
 [info] Done packaging.
-[success] Total time: 1 s, completed 05.07.2019 18:01:25
 ```
---
-```sh
+
+```html
 example07 $ ls -1 lib/target/scala-2.13/*.jar
 lib/target/scala-2.13/weatherlib_2.13-0.1.0-javadoc.jar
 lib/target/scala-2.13/weatherlib_2.13-0.1.0-sources.jar
@@ -1828,11 +1776,15 @@ name: publishing
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example07*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/1.x/docs/Publishing.html*
+]
 
 ---
 
-class: middle
-
+<br/>
+<br/>
+<br/>
 ## Local Publishing
 <br/>
 
@@ -1850,18 +1802,16 @@ or *false* if the Ivy style is used.
 <br/>
 <br/>
 <br/>
-<br/>
-
 ```html
 sbt:Example07> project lib
 [info] Set current project to WeatherLib (in build file:.../example07/)
 ```
---
+
 ```html
 sbt:WeatherLib> publishMavenStyle
 [info] true
 ```
---
+
 ```html
 sbt:WeatherLib> publishLocal
 [info] Writing Ivy file .../example07/lib/target/scala-2.13/resolution-cache/com.example/weatherlib_2.13/0.1.0/resolved.xml.xml
@@ -1873,7 +1823,6 @@ sbt:WeatherLib> publishLocal
 [info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/srcs/weatherlib_2.13-sources.jar
 [info] 	published weatherlib_2.13 to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/docs/weatherlib_2.13-javadoc.jar
 [info] 	published ivy to ~/.ivy2/local/com.example/weatherlib_2.13/0.1.0/ivys/ivy.xml
-[success] Total time: 1 s, completed 05.07.2019 19:38:23
 ```
 
 ---
@@ -1889,10 +1838,6 @@ To publish a jar to a remote repo (in Maven style or in Ivy style) ...
 - add the credentials for that resolver to the **credentials** setting
 - (or alternatively and preferably - load the credentials from a properties file)
 - run the **publish** command
-
-<br/>
-For examples and more details see:<br/>
-https://www.scala-sbt.org/1.x/docs/Publishing.html
 
 ---
 
@@ -1924,7 +1869,7 @@ lazy val app = (project in file("app"))
 lazy val lib = (project in file("lib"))
   .settings(
     name := "WeatherLib",
-    // don't skip publishing in the library project
+    // the library project should be published
     ...
   )
 ```
@@ -1946,11 +1891,14 @@ name: installable_packages
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example08*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://sbt-native-packager.readthedocs.io/*
+]
 
 ---
 
-class: middle
-
+<br/>
+<br/>
 ## Library or App?
 <br/>
 
@@ -1961,12 +1909,13 @@ This can be done with sbt without additional plugin.
 
 --
 
+<br/>
 If you write an application you have to generate a installable package in the format
 of the intended destination system, e.g. a Debian package for Debian or Ubuntu Linux
 or an MSI package for Windows or a Docker image or some other installable format.
 
 The **sbt-native-packager** plugin allows you to create a software distribution
-of an application in any format.
+of an application and supports many formats.
 
 ---
 
@@ -1995,21 +1944,23 @@ The plugin must be enabled for the project you want to package.
 ## Staging
 
 The **stage** command creates a local directory ( *.../target/universal/stage* )
-with all the files laid out as they would be in the final distribution.
+with all the files laid out as required in the final distribution.
 
 --
 
 ```html
 sbt:Example08> project app
 [info] Set current project to WeatherApp (in build file:.../example08/)
+```
+
+```html
 sbt:WeatherApp> stage
 [info] Packaging ...
-...
 ```
 
 --
 
-```sh
+```html
 example08 $ tree app/target/universal/stage
 app/target/universal/stage
 ├── bin
@@ -2028,15 +1979,12 @@ app/target/universal/stage
 ---
 
 <br/>
-<br/>
-<br/>
+## Start Scripts
 
 *bin/weatherapp* can start the application on Mac and Linux.<br/>
 *bin/weatherapp.bat* can start the application on Windows.
-<br/>
-<br/>
 
-```sh
+```html
 example08 $ app/target/universal/stage/bin/weatherapp 
 
 Scala version 2.13.0:
@@ -2047,23 +1995,21 @@ example08 $
 
 --
 
-<br/>
-<br/>
-<br/>
-<br/>
-<br/>
+## Setting: maintainer
+
 The following packaging commands require a **maintainer** setting in the build.<br/>
 Otherwise sbt would issue a warning: &nbsp; "The maintainer is empty"
 
 ```scala
+maintainer         := "functional.hacker@example.com",
 ```
 
 ---
 
 ## Zip distribution
 
-The **universal:packageBin** command creates a zip file containg all the files staged.
-The same can be achieved with a simple **dist** command.
+The **universal:packageBin** command creates a zip file containg all staged files.
+The **dist** command achieves the same.
 
 --
 
@@ -2071,12 +2017,11 @@ The same can be achieved with a simple **dist** command.
 sbt:WeatherApp> universal:packageBin
 [info] ...
 [info] Your package is ready in .../example08/app/target/universal/weatherapp-0.1.0.zip
-[success] Total time: 2 s, completed 06.07.2019 00:33:12
 ```
 
 --
 
-```sh
+```html
 example08 $ unzip -l app/target/universal/weatherapp-0.1.0.zip 
 Archive:  app/target/universal/weatherapp-0.1.0.zip
   Length      Date    Time    Name
@@ -2116,12 +2061,12 @@ a weatherapp-0.1.0/lib/com.squareup.okio.okio-1.17.2.jar
 ...
 a weatherapp-0.1.0/bin/weatherapp
 a weatherapp-0.1.0/bin/weatherapp.bat
-[success] Total time: 1 s, completed 06.07.2019 17:27:55
+[success] Total time: ...
 ```
 
 --
 
-```sh
+```html
 example08 $ unzip -l app/target/universal/weatherapp-0.1.0.zip 
 HermannMBP:example08 hermann$ tar -tzf app/target/universal/weatherapp-0.1.0.tgz 
 weatherapp-0.1.0/
@@ -2148,16 +2093,18 @@ created: .../example08/app/target/universal/weatherapp-0.1.0.dmg
 /dev/disk3          	GUID_partition_scheme          	
 /dev/disk3s1        	Apple_HFS                      	.../example08/app/target/universal/dmg/weatherapp-0.1.0
 "disk3" ejected.
-[success] Total time: 2 s, completed 06.07.2019 00:52:29
+[success] Total time: ...
 ```
 
 --
 
-```sh
+```html
 example08 $ hdiutil mount app/target/universal/weatherapp-0.1.0.dmg
 /dev/disk3          	GUID_partition_scheme          	
 /dev/disk3s1        	Apple_HFS                      	/Volumes/weatherapp-0.1.0
+```
 
+```html
 example08 $ tree /Volumes/weatherapp-0.1.0
 /Volumes/weatherapp-0.1.0
 ├── bin
@@ -2192,12 +2139,12 @@ sbt:WeatherApp> docker:publishLocal
 [info] Successfully built 96d21665e894
 [info] Successfully tagged weatherapp:0.1.0
 [info] Built image weatherapp with tags [0.1.0]
-[success] Total time: 10 s, completed 06.07.2019 01:29:03
+[success] Total time: ...
 ```
 
 --
 
-```sh
+```html
 example08 $ docker run weatherapp:0.1.0
 
 Scala version 2.13.0:
@@ -2208,27 +2155,21 @@ The weather in Berlin is:   light rain
 ---
 
 <br/>
-<br/>
-<br/>
-<br/>
-**sbt-native-packager** supports many more archetypes and formats.
+## Archetypes
 
-These examples used the *JavaAppPackaging* archtype (for simple CLI applications)
-For Java server apps you shold use the *JavaServerAppPackaging* archtype.
+sbt-native-packager supports many more archetypes and formats.
+
+- These examples used the *JavaAppPackaging* archtype.
+
+- For Java server apps you shold use the *JavaServerAppPackaging* archtype.
 
 --
 
-<br/>
+## General idea
+
 The general idea is "native packaging". I.e. create a Windows package on a Windows system,
 create a Debian package on a Debian based Linux system (Debian or Ubuntu), an RPM package
 on Redhat or SuSE Linux and a DMG package on a Mac.
-
---
-
-<br/>
-For more information read the docs at:
-
-https://sbt-native-packager.readthedocs.io/
 
 ---
 
@@ -2246,6 +2187,9 @@ name: predefined_settings_tasks
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example08*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Basic-Def.html*
+]
 
 ---
 
@@ -2257,7 +2201,8 @@ There are three flavours of keys reflected in three different key types:
 
 - **TaskKey[T]**: a key for a value, called a task, that has to be recomputed each time, potentially with side effects.
 
-- **InputKey[T]**: a key for a task that has command line arguments as input. (We will ignore them here.)
+- **InputKey[T]**: a key for a task that has command line arguments as input.
+  (We will ignore them here and explore them later.)
 
 --
 
@@ -2274,8 +2219,10 @@ https://www.scala-sbt.org/release/api/sbt/Keys$.html
 
 ---
 
+<br/>
 ## Display predefined Settings
 
+<br/>
 A setting can be displayed by just invoking the setting's name at the sbt prompt.
 (You can also precede the settings name with the **show** command.)
 
@@ -2302,8 +2249,10 @@ sbt:WeatherLib> libraryDependencies
 
 ---
 
+<br/>
 ## Maniplulating the value of a setting
 
+<br/>
 Values of settings are typically defined in the build file (*build.sbt*).
 They can also be set at the command prompt with the **set** command.
 
@@ -2317,7 +2266,7 @@ sbt:WeatherLib> set libraryDependencies += "org.typelevel" %% "cats-core" % "1.6
 [info] Reapplying settings...
 [info] Set current project to WeatherLib (in build file:.../example08/)
 ```
---
+
 ```html
 sbt:WeatherLib> libraryDependencies
 [info] * org.scala-lang:scala-library:2.13.0
@@ -2327,8 +2276,11 @@ sbt:WeatherLib> libraryDependencies
 [info] * org.typelevel:cats-core:1.6.1
 ```
 
---
+---
 
+<br/>
+<br/>
+## List available settings
 <br/>
 - **settings**: &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;shows a list of the most common predefined settings
 - **settings -v**: &nbsp; &nbsp; extends that list
@@ -2336,44 +2288,41 @@ sbt:WeatherLib> libraryDependencies
 
 ---
 
+<br/>
 ## Predefined Tasks
 
+<br/>
 Tasks (like *compile*, *test* or *packageBin*) are mostly predefined in sbt.
 But they can be redefined in the build file (*build.sbt*).
 
 A task containes executable code. To display its result you have to you run it.
 
-Just running a task does not show it#s result. To run it and see the result invoke it with **show**.
+Just running a task does not show it#s result. To run it and to see the result invoke it with **show**.
 
 --
 
 <br/>
 ```html
 sbt:WeatherLib> compile
-[success] Total time: 1 s, completed 08.07.2019 15:06:00
+[success] Total time: ...
 ```
 
 ```html
 sbt:WeatherLib> show compile
 [info] Analysis: 1 Scala source, 3 classes, 5 binary dependencies
-[success] Total time: 0 s, completed 08.07.2019 15:06:10
+[success] Total time: ...
 ```
 
---
+---
+
+<br/>
+<br/>
+## List available tasks
 
 <br/>
 - **tasks**: &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;shows a list of the most common predefined tasks
 - **tasks -v**: &nbsp; &nbsp; extends that list
 - **tasks -V**: &nbsp; &nbsp; displays all available tasks
-
----
-
-class: middle
-
-<br/>
-More details at:
-
-https://www.scala-sbt.org/release/docs/Basic-Def.html
 
 ---
 
@@ -2391,12 +2340,15 @@ name: custom_settings_tasks
 .footnote[
   &nbsp; &nbsp; &nbsp; *.../example09*
 ]
+.footnote2[
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Custom-Settings.html*
+]
 
 ---
 
 ## Custom Settings
 
-You are not restricted to the settings predefined by sbt. Define your own.
+Define your own setting with **settingKey[T]**.
 
 ```scala
 val sampleStringSetting: SettingKey[String] = settingKey[String]("A sample string setting.")
@@ -2420,7 +2372,7 @@ lazy val root = (project in file("."))
       val sum = 1 + 2
       println("sum: " + sum)
       sum
-    }
+    },
   )
 ```
 
@@ -2430,7 +2382,7 @@ lazy val root = (project in file("."))
 ```html
 example09aCustomSettings $ sbt
 ...
-[success] Total time: 1 s, completed 08.07.2019 16:43:21
+[success] Total time: ...
 [info] Loading settings for project root from build.sbt ...
 >>> Executing sampleStringSetting ...
 >>> Executing sampleIntSetting ...
@@ -2450,7 +2402,7 @@ sbt:Example9a> sampleIntSetting
 
 ## Custom Tasks
 
-You are not restricted to the tasks predefined by sbt. Define your own tasks.
+Define your own task with **taskKey[T]**.
 
 ```scala
 val sampleStringTask: TaskKey[String] = taskKey[String]("A sample string task.")
@@ -2483,33 +2435,37 @@ lazy val root = (project in file("."))
 ```html
 example09bCustomTasks $ sbt
 ...
-[success] Total time: 2 s, completed 08.07.2019 17:14:19
+[success] Total time: ...
 [info] Loading settings for project root from build.sbt ...
 [info] Set current project to Example9b (in build file:.../example09bCustomTasks/)
 ```
+
 ```html
 sbt:Example9b> sampleStringTask
 >>> Executing sampleStringTask ...
-[success] Total time: 0 s, completed 08.07.2019 17:14:41
+[success] Total time: ...
 ```
+
 ```html
 sbt:Example9b> show sampleStringTask
 >>> Executing sampleStringTask ...
 [info] /Library/Java/JavaVirtualMachines/jdk1.8.0_212.jdk/Contents/Home/jre
-[success] Total time: 0 s, completed 08.07.2019 17:14:59
+[success] Total time: ...
 ```
+
 ```html
 sbt:Example9b> sampleIntTask
 >>> Executing sampleIntTask ...
 sum: 3
-[success] Total time: 0 s, completed 08.07.2019 17:15:11
+[success] Total time: ...
 ```
+
 ```html
 sbt:Example9b> show sampleIntTask
 >>> Executing sampleIntTask ...
 sum: 3
 [info] 3
-[success] Total time: 1 s, completed 08.07.2019 17:15:21
+[success] Total time: ...
 ```
 
 ---
@@ -2517,8 +2473,8 @@ sum: 3
 ## Execution semantics of tasks
 
 <br/>
-If you do **not** invoke **.value** on another task all lines of a task will be invoked sequentially,
-e.g. in the *sampleIntTask* from the previous example.
+If you do **not** invoke **.value** on another task all lines inside the task implementation
+will be invoked sequentially, e.g. in the *sampleIntTask* from the previous example.
 
 ```scala
 sampleIntTask := {
@@ -2534,15 +2490,16 @@ sampleIntTask := {
 <br/>
 This is no longer true if you invoke **.value** on another task.
 
-- **.value** expresses a task dependency.
+- **.value** expresses a **task dependency**.
 - *x := y.value* &nbsp; means: &nbsp; Task x depends on task (or setting) y.
-- Different dependent task are executed **in parallel**.
+- If Task A depends on the Tasks B and C, B and C are executed **in parallel**,
+  but A is executed when B and C have finished.
 - Dependent tasks are **deduplicated**
 
 ---
 
-class: middle
-
+<br/>
+<br/>
 ## Rules
 
 <br/>
@@ -2594,20 +2551,22 @@ example09cExecutionSemanticsOfTasks $ sbt
 ...
 [info] Set current project to Example9c (in build file:.../example09cExecutionSemanticsOfTasks/)
 ```
+
 ```html
 sbt:Example9c> sampleIntTask
 stopping...
 starting...
 sum: 3
-[success] Total time: 1 s, completed 08.07.2019 17:59:27
+[success] Total time: ...
 ```
+
 ```html
 sbt:Example9c> sampleStringTask
 stopping...
 starting...
 sum: 3
 s: 3
-[success] Total time: 1 s, completed 08.07.2019 17:59:36
+[success] Total time: ...
 ```
 
 --
@@ -2618,7 +2577,7 @@ because *sampleIntTask* depends on those other tasks.
 - *startServer* and *stopServer* are executed in parallel as these tasks do not depend on each other.
 Hence you might se the output of *startServer* before the output *stopServer* or vice versa.
 
-- *sampleStringTask* depends two time on *startServer* (once directly and once via *simpleIntTask*).
+- *sampleStringTask* depends 2 x on *startServer* (once directly and once via *simpleIntTask*).
 But *startServer* is executed only once. sbt deduplicates task execution.
 
 ---
@@ -2659,24 +2618,13 @@ sbt:Example9c> inspect tree sampleStringTask
 
 <br/>
 <br/>
-<br/>
-<br/>
-<br/>
-For more details see:
-
-https://www.scala-sbt.org/release/docs/Custom-Settings.html
-
---
+## Task Graph
 
 <br/>
-<br/>
-<br/>
-<br/>
-<br/>
-All the tasks of a build form a **task graph** that doesn't allow cycles -
+All tasks of a build form a **task graph** that doesn't allow cycles -
 a directed acyclic graph (DAG) of tasks where the edges denote a **happens-before** relationship .
 
-More examples explain this in:
+More examples illustrate this in:
 
 https://www.scala-sbt.org/release/docs/Task-Graph.html
 
@@ -2694,7 +2642,7 @@ name: global_settings
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; https://www.scala-sbt.org/release/docs/Global-Settings.html
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Global-Settings.html*
 ]
 
 ---
@@ -2702,12 +2650,12 @@ name: global_settings
 <br/>
 ### build.sbt (or any other file suffixed with *.sbt*)
 
-- Local settings go into **./build.sbt** in the project#s base directory.
+- Local settings go into **./build.sbt** in the project's base directory.
 - Global settings used in all projects are located in **~/.sbt/1.0/global.sbt**.
+- *build.sbt* and *global.sbt* are just naming conventions. Any other name suffixed with *.sbt* is allowed.
 
 --
 
-<br/>
 ### Plugins
 
 - Local plugins are defined in **./project/plugins.sbt**.
@@ -2715,7 +2663,6 @@ name: global_settings
 
 --
 
-<br/>
 ### Startup commands (like alias definitions)
 
 - Local startup commands go into **.sbtrc** in the project's base directory.
@@ -2727,7 +2674,7 @@ name: global_settings
 
 <br/>
 - With the **!:** command you can display sbt's command history.
-- Every subproject (*root*, *app*, *lib*) has it's own history<br/>
+- By default every subproject (*root*, *app*, *lib*) has it's own history<br/>
  (saved in it's own history file).
 
 --
@@ -2760,7 +2707,7 @@ name: ammonite_repl
 &nbsp;
 
 .footnote[
-  &nbsp; &nbsp; &nbsp; https://www.scala-sbt.org/release/docs/Global-Settings.html
+  &nbsp; &nbsp; &nbsp; *http://ammonite.io/#SBTIntegration*
 ]
 
 ---
@@ -2818,10 +2765,10 @@ name: input_tasks
 &nbsp;
 
 .footnote[
-  example10a, example10b
+  &nbsp; &nbsp; &nbsp; *example10a*, *example10b*
 ]
 .footnote2[
-  https://www.scala-sbt.org/release/docs/Input-Tasks.html
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Input-Tasks.html*
 ]
 
 ---
@@ -2878,12 +2825,11 @@ are
 the
 args
 !
-[success] Total time: 0 s, completed 13.07.2019 08:01:52
 ```
 
 ---
 
-## Impl shell commands with InputTask
+## Shell commands implemented with InputTask
 
 ```scala
 // build.sbt
@@ -2911,7 +2857,6 @@ addCommandAlias("sh", "shellTask")
 ```html
 sbt:Example10b> sh find . -name *.class | wc -l
       14
-[success] Total time: 0 s, completed 13.07.2019 08:15:15
 ```
 
 ---
@@ -2928,10 +2873,10 @@ name: commands
 &nbsp;
 
 .footnote[
-  example11a, example11b
+  &nbsp; &nbsp; &nbsp; *example11a*, *example11b*
 ]
 .footnote2[
-  https://www.scala-sbt.org/release/docs/Commands.html
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Commands.html*
 ]
 
 ---
@@ -2940,6 +2885,8 @@ name: commands
 ## What is a “command”?
 
 <br/>
+The docs say:
+
 A “command” looks similar to a task: it’s a named operation that can be executed from the sbt console.
 
 However, a command’s implementation takes as its parameter the entire state of the build (represented by State)
@@ -2959,13 +2906,12 @@ The most general command takes ...
 
 ```scala
 // project/DemoCommand.scala
-import sbt._
-import Keys._
+import sbt._, Keys._
 
 object DemoCommand {
-
-  // A simple, multiple-argument command that prints "Hi, " followed by the arguments.
-  // It leaves the current state unchanged. The args are already parsed into a Seq[String].
+  // A simple, multiple-argument command that prints "Hi, " followed
+  // by the arguments. It leaves the current state unchanged.
+  // The args are already parsed into a Seq[String].
   def demoCommand = Command.args("demo", "<args>") { (state, args) =>
     println("Hi, " + args.mkString(" "))
     state
@@ -3002,11 +2948,10 @@ Hi, here comes the sun!
 ```scala
 // project/ShellCommand.scala
 import sbt._
-import scala.language.postfixOps
 import scala.sys.process._
+import scala.language.postfixOps
 
 object ShellCommand {
-
   def shellCommand = Command.single("sh") { (state, commandLine) =>
     Process(Seq("/bin/sh", "-c", commandLine)) !;
     state
@@ -3071,9 +3016,10 @@ https://www.scala-sbt.org/release/docs/Commands.html
 
 - If you don't need to change the build state, prefer *InputTask*.
 
-- No help is available for commands, but for settings, tasks and input tasks.
+- A description can be defined for settings, tasks and input tasks, but not for commands.
 
-- In the next chapter we will implement a ShellPlugin, once with a *Command*, once with an *InputTask*.
+- In the next chapter we will implement a ShellPlugin, once with a *Command*, once with an *InputTask*
+  and compare both solutions.
 
 ---
 
@@ -3089,10 +3035,10 @@ name: plugin_development
 &nbsp;
 
 .footnote[
-  example12a, example12b, example12c, example12d, example12e
+  &nbsp; &nbsp; &nbsp; *example12a*, *example12b*, *example12c*, *example12d*, *example12e*
 ]
 .footnote2[
-  https://www.scala-sbt.org/release/docs/Plugins.html
+  &nbsp; &nbsp; &nbsp; *https://www.scala-sbt.org/release/docs/Plugins.html*
 ]
 
 ---
@@ -3275,7 +3221,6 @@ object HelloPlugin extends AutoPlugin {
 ```html
 sbt:Example12c> hello
 Hi!
-[success] Total time: 1 s, completed 14.07.2019 18:55:34
 ```
 
 ---
@@ -3332,7 +3277,6 @@ lazy val root = (project in file("."))
 ```html
 sbt:Example12d> sh find . -name *.class | wc -l
       15
-[success] Total time: 0 s, completed 14.07.2019 19:04:20
 ```
 
 ---
@@ -3342,7 +3286,7 @@ sbt:Example12d> sh find . -name *.class | wc -l
 ## Pubishing the ShellPlugin
 
 Before we publish our new sbt-ShellPlugin to the local Ivy2 repository
-we have to set sensical values to the setting **name** and **organisation**
+we have to set sensible values to the setting **name** and **organisation**
 in the meta-project.
 
 <br/>
@@ -3371,14 +3315,14 @@ sbt:project> name
 sbt:project> set organization := "com.example.myplugins"
 [info] Defining organization
 ...
-[success] Total time: 1 s, completed 14.07.2019 19:51:56
+[success] Total time: ...
 ```
 
 ```html
 sbt:project> set name := "sbt-myshell"
 [info] Defining name
 ...
-[success] Total time: 1 s, completed 14.07.2019 19:53:19
+[success] Total time: ...
 ```
 
 ```html
@@ -3401,7 +3345,7 @@ sbt:sbt-myshell> publishLocal
 [info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/srcs/sbt-myshell-sources.jar
 [info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/docs/sbt-myshell-javadoc.jar
 [info] 	published ivy to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/ivys/ivy.xml
-[success] Total time: 1 s, completed 14.07.2019 19:54:46
+[success] Total time: ...
 ```
 
 --
@@ -3416,7 +3360,6 @@ Let's save these settings permanently.
 sbt:sbt-myshell> session save
 [info] Reapplying settings...
 ...
-[success] Total time: 1 s, completed 14.07.2019 20:22:24
 ```
 
 ```html
@@ -3431,7 +3374,6 @@ organization := "com.example.myplugins"
 
 name := "sbt-myshell"
 
-[success] Total time: 1 s, completed 14.07.2019 20:23:36
 ```
 
 ---
@@ -3463,18 +3405,18 @@ sbt:Example12d> sh tree ~/.ivy2/local/*
                     ├── sbt-myshell-sources.jar
                     ├── sbt-myshell-sources.jar.md5
                     └── sbt-myshell-sources.jar.sha1
-
-9 directories, 15 files
-[success] Total time: 1 s, completed 14.07.2019 20:35:35
 ```
 
 ---
 
-# Using the locally published Plugin
+<br/>
+<br/>
+## Using the locally published Plugin
 
+<br/>
 In any other sbt project we can use the plugin we just published in the previous section.
 
-As we do with any other plugin, we import into our sbt project into some sbt file
+As we do with any other plugin, we import it into some sbt file
 in the meta-project, usually in *project/plugins.sbt*.
 
 --
@@ -3565,7 +3507,7 @@ name: references
 
 ---
 
-## References
+### References
 
 - Code and Slides of this Talk:<br/>
   https://github.com/hermannhueck/pragmatic-sbt
@@ -3584,7 +3526,8 @@ name: references
 
 - sbt core concepts<br/>
   Talk by Eugene Yokota at Scala Days Lausanne 2019<br/>
-  https://www.youtube.com/watch?v=-shamsTC7rQ
+  https://www.youtube.com/watch?v=-shamsTC7rQ<br/>
+  https://portal.klewel.com/watch/webcast/scala-days-2019/talk/15/
 
 - sbt-native-packager - package all the things<br/>
   Talk by Nepomuk Seiler at Scala Days Berlin 2018<br/>
