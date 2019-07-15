@@ -25,7 +25,11 @@
       .remark-slide-content h3 { font-size: 1.6em; }
       .footnote {
         position: absolute;
-        bottom: 3em;
+        bottom: 4em;
+      }
+      .footnote2 {
+        position: absolute;
+        bottom: 2em;
       }
       li p { line-height: 1.25em; }
       .red { color: #fa0000; }
@@ -209,7 +213,6 @@ Recommended tutorial to start with sbt:
 ---
 
 ## Agenda
-<br/>
 
 1. [sbt without build file](#sbt_without_buildfile)
 1. [sbt new](#sbt_new)
@@ -228,6 +231,9 @@ Recommended tutorial to start with sbt:
 1. [Custom Settings and Tasks](#custom_settings_tasks)
 1. [Global Settings](#global_settings)
 1. [Ammonite REPL](#ammonite_repl)
+1. [Input Tasks](#input_tasks)
+1. [Commands](#commands)
+1. [Plugin Development](#plugin_development)
 1. [References](#references)
 
 ---
@@ -306,7 +312,7 @@ sbt:example01> name
 --
 ```html
 sbt:example01> projects
-[info] In file:/Users/hermann/dev/projects/github/pragmatic-sbt/example01/
+[info] In file:.../example01/
 [info] 	 * example01
 ```
 --
@@ -2245,7 +2251,7 @@ name: predefined_settings_tasks
 
 ## Keys
 
-There are 3 flavours of keys reflected in 3 key types:
+There are three flavours of keys reflected in three different key types:
 
 - **SettingKey[T]**: a key for a value computed once (the value is computed when loading the subproject, and kept around).
 
@@ -2736,13 +2742,9 @@ name: global_settings
 ### ~/.sbt/1.0/global.sbt
 
 ```scala
-historyPath := Some( (ThisBuild / baseDirectory).value / ".history" )
-cleanKeepFiles -= (ThisBuild / baseDirectory).value / ".history"
+historyPath := Some( (target in LocalRootProject).value / ".history")
+cleanKeepFiles -= (target in LocalRootProject).value / ".history"
 ```
-
---
-
-Put *.history* into the **.gitignore** file in order to exclude it from version control.
 
 ---
 
@@ -2757,12 +2759,17 @@ name: ammonite_repl
 <br/>
 &nbsp;
 
+.footnote[
+  &nbsp; &nbsp; &nbsp; https://www.scala-sbt.org/release/docs/Global-Settings.html
+]
+
 ---
 
 Ammonite is a very powerful Scala REPL.
 
-With the following settings we make it available from the sbt prompt
-(like the Scala console) in all our projects.
+Let's make it available in sbt (like the Scala console) in all our projects...
+
+--
 
 ### ~/.sbt/1.0/global.sbt
 
@@ -2777,6 +2784,8 @@ Test / sourceGenerators += Def.task {
 
 addCommandAlias("amm", "Test/runMain amm")
 ```
+
+--
 
 ```html
 sbt:Example08> amm
@@ -2798,9 +2807,755 @@ x: Int = 5
 ---
 
 class: middle, center
-name: references ammonite_repl
+name: input_tasks
 
-# 18. References
+# 18. Input Tasks
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  example10a, example10b
+]
+.footnote2[
+  https://www.scala-sbt.org/release/docs/Input-Tasks.html
+]
+
+---
+
+<br/>
+## InputTask
+
+Input Tasks take command line arguments as input. They parse user input and produce a task to run.
+
+--
+
+## Overview of Keys
+
+There are three flavours of keys reflected in three key types:
+
+- **SettingKey[T]**: a key for a value computed once (the value is computed when loading the subproject, and kept around).
+
+- **TaskKey[T]**: a key for a value, called a task, that has to be recomputed each time, potentially with side effects.
+
+- **InputKey[T]**: a key for a task that has command line arguments as input.
+
+---
+
+```scala
+// build.sbt
+
+...
+
+val demo = inputKey[Unit]("A demo input task.")
+
+demo := {
+  
+  import complete.DefaultParsers._
+  
+  println(">>> Current Scala version:")
+  println(scalaVersion.value) // access a setting
+
+  val args: Seq[String] = spaceDelimited("<arg>").parsed // get parsed result
+  println(">>> Arguments to demo:")
+  args foreach println
+}
+```
+
+--
+
+<br/>
+```html
+sbt:Example10a> demo these are the args !
+>>> Current Scala version:
+2.12.8
+>>> Arguments to demo:
+these
+are
+the
+args
+!
+[success] Total time: 0 s, completed 13.07.2019 08:01:52
+```
+
+---
+
+## Impl shell commands with InputTask
+
+```scala
+// build.sbt
+...
+
+lazy val shellTask = inputKey[Int]("Execute a shell command")
+
+shellTask := {
+  
+  import complete.DefaultParsers._
+  import scala.language.postfixOps
+  import scala.sys.process._
+  
+  val args: Seq[String] = spaceDelimited("<arg>").parsed
+  val commandLine = args.mkString(" ")
+  Process(Seq("/bin/sh", "-c", commandLine)) !
+}
+
+addCommandAlias("sh", "shellTask")
+```
+
+--
+
+<br/>
+```html
+sbt:Example10b> sh find . -name *.class | wc -l
+      14
+[success] Total time: 0 s, completed 13.07.2019 08:15:15
+```
+
+---
+
+class: middle, center
+name: commands
+
+# 19. Commands
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  example11a, example11b
+]
+.footnote2[
+  https://www.scala-sbt.org/release/docs/Commands.html
+]
+
+---
+
+<br/>
+## What is a “command”?
+
+<br/>
+A “command” looks similar to a task: it’s a named operation that can be executed from the sbt console.
+
+However, a command’s implementation takes as its parameter the entire state of the build (represented by State)
+and computes a new state. This means that a command can look at or modify other sbt settings, for example.
+Typically, you would resort to a command when you need to do something that’s impossible in a regular task. 
+
+--
+
+<br/>
+The most general command takes ...
+
+- a name: the name with wich the command is to be invoked
+- a parser: used to parse the user input after the command name
+- an action to be executed which takes the current build state and turns it to the next state: *(State, T) => State*
+
+---
+
+```scala
+// project/DemoCommand.scala
+import sbt._
+import Keys._
+
+object DemoCommand {
+
+  // A simple, multiple-argument command that prints "Hi, " followed by the arguments.
+  // It leaves the current state unchanged. The args are already parsed into a Seq[String].
+  def demoCommand = Command.args("demo", "<args>") { (state, args) =>
+    println("Hi, " + args.mkString(" "))
+    state
+  }
+  // This is just one of several ways to construct a command.
+}
+```
+
+```scala
+// build.sbt
+...
+
+import DemoCommand._
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example11a",
+    commands += demoCommand,
+  )
+```
+
+--
+
+<br/>
+```html
+sbt:Example11a> demo here comes the sun!
+Hi, here comes the sun!
+```
+
+---
+
+## Shell command implemented as sbt command
+
+```scala
+// project/ShellCommand.scala
+import sbt._
+import scala.language.postfixOps
+import scala.sys.process._
+
+object ShellCommand {
+
+  def shellCommand = Command.single("sh") { (state, commandLine) =>
+    Process(Seq("/bin/sh", "-c", commandLine)) !;
+    state
+  }
+}
+```
+
+```scala
+// build.sbt
+...
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example11b",
+    commands += ShellCommand.shellCommand,
+  )
+```
+
+--
+
+<br/>
+```html
+sbt:Example11b> sh find . -name *.class | wc -l
+      14
+```
+
+---
+
+<br/>
+The *DemoCommand* and the *ShellCommand* examples were quite simple.
+
+*DemoCommand* created the command with the factory method *Command.args*,
+where the user input was already parsed into *Seq[String]* - a sequence of white space delimited words.
+
+*ShellCommand* created the command with the factory method *Command.single*,
+where the user input was parsed into a *String* - i.e the user input was unchanged
+(which was sufficient for our shell use case).
+
+In both cases the action function &nbsp; *(State, T) => State* &nbsp; passed the state back unchanged.
+
+--
+
+<br/>
+For more complex parsing use cases, where parsing also supports tab completion, see:
+
+https://www.scala-sbt.org/release/docs/Parsing-Input.html
+
+For State changes inside the action function of a command see:
+
+https://www.scala-sbt.org/release/docs/Commands.html
+
+
+---
+
+<br/>
+<br/>
+## Command vs. InputTask
+
+<br/>
+- Both can parse user input (and support tab completion).
+
+- A *Command* can change the build state, but *InputTask* cannot.
+
+- If you don't need to change the build state, prefer *InputTask*.
+
+- No help is available for commands, but for settings, tasks and input tasks.
+
+- In the next chapter we will implement a ShellPlugin, once with a *Command*, once with an *InputTask*.
+
+---
+
+class: middle, center
+name: plugin_development
+
+# 20. Plugin Development
+<br/>
+<br/>
+<br/>
+<br/>
+<br/>
+&nbsp;
+
+.footnote[
+  example12a, example12b, example12c, example12d, example12e
+]
+.footnote2[
+  https://www.scala-sbt.org/release/docs/Plugins.html
+]
+
+---
+
+## AutoPlugin
+
+An AutoPlugin defines a group of settings and the conditions where the settings
+are automatically added to a build (called "activation").
+
+--
+
+In your meta-project (i.e. in directory *project*) ...
+
+- create a Scala object extending *sbt.AutoPlugin*
+
+- override def *requires* = ...<br/>
+  to define the plugins this plugin is depending on
+
+- override def *trigger* = *noTrigger* | *allRequirements*<br/>
+  to specify whether to enable the plugin manually or automatically
+
+- override lazy val *buildSettings* = ...<br/>
+  to change settings at the build level as needed
+  (or use *projectSettings* or *globalSettings* to change settings at project or global level as needed)
+
+--
+
+In *build.sbt*
+
+- enable your plugin with *enablePlugins*, if *trigger* was *noTrigger*
+
+- Nothing to do, if *trigger* was *allRequirements*
+
+---
+
+## Plugin enabled manually
+
+```scala
+// project/src/main/scala/shell/ShellCommand.scala
+package shell
+
+import sbt._, Keys._
+import scala.language.postfixOps
+import scala.sys.process._
+
+object ShellPlugin extends AutoPlugin {
+
+  override def requires: Plugins = empty // other plugins this plugin depends on
+  override def trigger: PluginTrigger = noTrigger // enable manually in build.sbt
+  override lazy val buildSettings = Seq(commands += shellCommand) // add build level settings
+
+  lazy val shellCommand: Command = Command.single("sh") { (state, commandLine) =>
+    Process(Seq("/bin/sh", "-c", commandLine)) !;
+    state
+  }
+}
+```
+
+```scala
+// build.sbt
+...
+lazy val root = (project in file("."))
+  .enablePlugins(ShellPlugin)
+  .settings(
+    name := "Example12a",
+  )
+```
+
+---
+
+<br/>
+<br/>
+<br/>
+```html
+sbt:Example12a> sh find . -name *.class | wc -l
+      14
+```
+
+```html
+sbt:Example12a> plugins
+In file:.../example12a/
+	sbt.plugins.IvyPlugin: enabled in root
+	sbt.plugins.JvmPlugin: enabled in root
+	sbt.plugins.CorePlugin: enabled in root
+	sbt.ScriptedPlugin
+	sbt.plugins.SbtPlugin
+	...
+	shell.ShellPlugin: enabled in root
+```
+
+---
+
+## Plugin enabled automatically
+
+```scala
+// project/src/main/scala/shell/ShellCommand.scala
+package shell
+
+import sbt._, Keys._
+import scala.language.postfixOps
+import scala.sys.process._
+
+object ShellPlugin extends AutoPlugin {
+
+  override def requires: Plugins = empty // other plugins this plugin depends on
+  override def trigger: PluginTrigger = allRequirements // enable automatically
+  override lazy val buildSettings = Seq(commands += shellCommand) // add build level settings
+
+  lazy val shellCommand: Command = Command.single("sh") { (state, commandLine) =>
+    Process(Seq("/bin/sh", "-c", commandLine)) !;
+    state
+  }
+}
+```
+
+```scala
+// build.sbt
+...
+lazy val root = (project in file("."))
+  // no need to enable ShellPlugin
+  .settings(
+    name := "Example12b",
+  )
+```
+
+---
+
+<br/>
+<br/>
+<br/>
+```html
+sbt:Example12b> sh find . -name *.class | wc -l
+      14
+```
+
+```html
+sbt:Example12b> plugins
+In file:.../example12b/
+	sbt.plugins.IvyPlugin: enabled in root
+	sbt.plugins.JvmPlugin: enabled in root
+	sbt.plugins.CorePlugin: enabled in root
+	sbt.ScriptedPlugin
+	sbt.plugins.SbtPlugin
+	...
+	shell.ShellPlugin: enabled in root
+```
+
+---
+
+## Settings and Tasks in Plugins
+
+```scala
+// project/HelloPlugin
+import sbt._
+import Keys._
+
+object HelloPlugin extends AutoPlugin {
+
+  object autoImport {
+    val greeting = settingKey[String]("greeting")
+    val hello = taskKey[Unit]("say hello")
+  }
+
+  import autoImport._
+  override def trigger = allRequirements
+  override lazy val buildSettings = Seq(greeting := "Hi!", hello := helloTask.value)
+  lazy val helloTask = Def.task {
+      println(greeting.value)
+    }
+}
+```
+
+```scala
+// build.sbt - doesn't know about the automatically enabled plugins
+```
+
+--
+
+<br/>
+```html
+sbt:Example12c> hello
+Hi!
+[success] Total time: 1 s, completed 14.07.2019 18:55:34
+```
+
+---
+
+## ShellPlugin implemented with InputTask
+
+```scala
+// project/src/main/scala/shell/ShellPlugin
+package shell
+
+import sbt._, Keys._
+import complete.DefaultParsers._
+import scala.sys.process.Process
+import scala.language.postfixOps
+
+object ShellPlugin extends AutoPlugin {
+
+  object autoImport {
+    lazy val sh = inputKey[Int]("Execute a shell command")
+  }
+
+  import autoImport._
+
+  override def requires: Plugins = empty // other plugins this plugin depends on
+  override def trigger: PluginTrigger = allRequirements // enable automatically
+  override lazy val buildSettings = Seq(sh := shellTask.evaluated)
+
+  lazy val shellTask = Def.inputTask {
+    
+    val args: Seq[String] = spaceDelimited("<arg>").parsed
+    val commandLine = args.mkString(" ")
+    Process(Seq("/bin/sh", "-c", commandLine)) !
+  }
+}
+```
+
+---
+
+<br/>
+<br/>
+```scala
+// build.sbt - doesn't know about the automatically enabled plugins
+...
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "Example12d",
+  )
+```
+
+--
+
+<br/>
+```html
+sbt:Example12d> sh find . -name *.class | wc -l
+      15
+[success] Total time: 0 s, completed 14.07.2019 19:04:20
+```
+
+---
+
+<br/>
+<br/>
+## Pubishing the ShellPlugin
+
+Before we publish our new sbt-ShellPlugin to the local Ivy2 repository
+we have to set sensical values to the setting **name** and **organisation**
+in the meta-project.
+
+<br/>
+- **reload plugins** &nbsp; &nbsp; brings us to the meta-project, i.e. the project defined in the *project* directory.
+
+- **reload return** &nbsp; &nbsp; &nbsp; brings us back again.
+
+---
+
+```html
+sbt:Example12d> reload plugins
+...
+```
+
+```html
+sbt:project> organization
+[info] default
+```
+
+```html
+sbt:project> name
+[info] project
+```
+
+```html
+sbt:project> set organization := "com.example.myplugins"
+[info] Defining organization
+...
+[success] Total time: 1 s, completed 14.07.2019 19:51:56
+```
+
+```html
+sbt:project> set name := "sbt-myshell"
+[info] Defining name
+...
+[success] Total time: 1 s, completed 14.07.2019 19:53:19
+```
+
+```html
+sbt:sbt-myshell> organization
+[info] com.example.myplugins
+```
+
+```html
+sbt:sbt-myshell> name
+[info] sbt-myshell
+```
+
+---
+
+```html
+sbt:sbt-myshell> publishLocal
+...
+[info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/poms/sbt-myshell.pom
+[info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/jars/sbt-myshell.jar
+[info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/srcs/sbt-myshell-sources.jar
+[info] 	published sbt-myshell to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/docs/sbt-myshell-javadoc.jar
+[info] 	published ivy to ~/.ivy2/local/com.example.myplugins/sbt-myshell/scala_2.12/sbt_1.0/0.1.0-SNAPSHOT/ivys/ivy.xml
+[success] Total time: 1 s, completed 14.07.2019 19:54:46
+```
+
+--
+
+Let's save these settings permanently.
+
+- **session save** &nbsp; &nbsp; writes these settings permanently to *project/build.sbt*.
+
+--
+
+```html
+sbt:sbt-myshell> session save
+[info] Reapplying settings...
+...
+[success] Total time: 1 s, completed 14.07.2019 20:22:24
+```
+
+```html
+sbt:sbt-myshell> reload return
+...
+[info] Set current project to Example12d (in build file:.../example12d/)
+```
+
+```html
+sbt:Example12d> sh cat project/build.sbt
+organization := "com.example.myplugins"
+
+name := "sbt-myshell"
+
+[success] Total time: 1 s, completed 14.07.2019 20:23:36
+```
+
+---
+
+```html
+sbt:Example12d> sh tree ~/.ivy2/local/*
+~/.ivy2/local/com.example.myplugins
+└── sbt-myshell
+    └── scala_2.12
+        └── sbt_1.0
+            └── 0.1.0-SNAPSHOT
+                ├── docs
+                │   ├── sbt-myshell-javadoc.jar
+                │   ├── sbt-myshell-javadoc.jar.md5
+                │   └── sbt-myshell-javadoc.jar.sha1
+                ├── ivys
+                │   ├── ivy.xml
+                │   ├── ivy.xml.md5
+                │   └── ivy.xml.sha1
+                ├── jars
+                │   ├── sbt-myshell.jar
+                │   ├── sbt-myshell.jar.md5
+                │   └── sbt-myshell.jar.sha1
+                ├── poms
+                │   ├── sbt-myshell.pom
+                │   ├── sbt-myshell.pom.md5
+                │   └── sbt-myshell.pom.sha1
+                └── srcs
+                    ├── sbt-myshell-sources.jar
+                    ├── sbt-myshell-sources.jar.md5
+                    └── sbt-myshell-sources.jar.sha1
+
+9 directories, 15 files
+[success] Total time: 1 s, completed 14.07.2019 20:35:35
+```
+
+---
+
+# Using the locally published Plugin
+
+In any other sbt project we can use the plugin we just published in the previous section.
+
+As we do with any other plugin, we import into our sbt project into some sbt file
+in the meta-project, usually in *project/plugins.sbt*.
+
+--
+
+<br/>
+```scala
+addSbtPlugin("com.example.myplugins" % "sbt-myshell" % "0.1.0-SNAPSHOT")
+```
+
+---
+
+<br/>
+<br/>
+```html
+sbt:Example12e> plugins
+In file:.../example12e/
+	sbt.plugins.IvyPlugin: enabled in root
+	sbt.plugins.JvmPlugin: enabled in root
+	sbt.plugins.CorePlugin: enabled in root
+	...
+	shell.ShellPlugin: enabled in root
+```
+
+```html
+sbt:Example12e> sh find . -name *.class | wc -l
+      17
+```
+
+```html
+sbt:Example12e> sh cat project/plugins.sbt
+addSbtPlugin("com.example.myplugins" % "sbt-myshell" % "0.1.0-SNAPSHOT")
+```
+
+```html
+sbt:Example12e> inspect sh
+[info] Input task: Int
+[info] Description:
+[info] 	Execute a shell command
+[info] Provided by:
+[info] 	{file:.../example12e/} / sh
+[info] Defined at:
+[info] 	(shell.ShellPlugin.buildSettings) ShellPlugin.scala:39
+...
+```
+
+---
+
+<br/>
+## Publish Plugin to Bintray
+
+<br/>
+To make the plugin availabe to the Scala community, publish it to Bintray.
+
+--
+
+First go to https://bintray.com/signup/oss to create an Open Source Distribution Bintray Account.
+
+The detailed procedure how to publish is described in:
+
+- https://www.scala-sbt.org/release/docs/Bintray-For-Plugins.html
+
+- https://www.scala-sbt.org/release/docs/Publishing.html
+
+--
+
+Plugins best practices can be found here:
+
+- https://www.scala-sbt.org/release/docs/Plugins-Best-Practices.html
+
+--
+
+We already mentioned one of them:
+
+- Use settings and tasks. Avoid commands if possible.
+
+---
+
+class: middle, center
+name: references
+
+# 21. References
 <br/>
 <br/>
 <br/>
@@ -2829,7 +3584,7 @@ name: references ammonite_repl
 
 - sbt core concepts<br/>
   Talk by Eugene Yokota at Scala Days Lausanne 2019<br/>
-  https://portal.klewel.com/watch/webcast/scala-days-2019/talk/15/
+  https://www.youtube.com/watch?v=-shamsTC7rQ
 
 - sbt-native-packager - package all the things<br/>
   Talk by Nepomuk Seiler at Scala Days Berlin 2018<br/>
