@@ -1,6 +1,4 @@
 import Dependencies._
-import scala.language.postfixOps
-import scala.sys.process._
 
 val scala212 = "2.12.8"
 val scala213 = "2.13.0"
@@ -19,7 +17,7 @@ inThisBuild(
 
 lazy val root = (project in file("."))
   .aggregate(app, lib)
-   // JavaAppPackaging not enabled for the root without source code
+   // JavaAppPackaging NOT enabled for the root without source code
    .settings(
     name := "Example08",
     publish / skip := true,
@@ -28,7 +26,7 @@ lazy val root = (project in file("."))
 
 lazy val app = (project in file("app"))
   .dependsOn(lib)
-  .enablePlugins(JavaAppPackaging)
+  .enablePlugins(JavaAppPackaging) // JavaAppPackaging enabled for the app
   .settings(
     name := "WeatherApp",
     maintainer := (ThisBuild / maintainer).value,
@@ -44,7 +42,7 @@ lazy val app = (project in file("app"))
   )
 
 lazy val lib = (project in file("lib"))
-   // JavaAppPackaging not enabled for the library
+   // JavaAppPackaging NOT enabled for the library
   .settings(
     name := "WeatherLib",
     crossScalaVersions := supportedScalaVersions,
