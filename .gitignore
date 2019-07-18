@@ -4,6 +4,7 @@ target/
 .idea/
 .bloop/
 .metals/
+.vscode/
 
 .dotty-ide-disabled
 
