@@ -1,7 +1,7 @@
 # Pragmatic SBT
 
-This presentation gives a pragmatic introduction to SBT - the Scala Build Tool -
-in 7 examples. Each example is a build in it's own root directory: ./example??
+This presentation gives a pragmatic introduction to SBT in 7 examples.
+Each example is a build in it's own root directory: ./example??
 Beginning with very simple sbt examples the later examples are becoming more
 structured and more complex showing multi-project builds, cross version builds,
 packaging and publishing, custom *Setting*s and *Task*s and the integration of the
